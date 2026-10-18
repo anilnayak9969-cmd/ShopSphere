@@ -1,0 +1,760 @@
+/* =====================================================================
+   Motion & role-based auth layout
+   - Home: hero entrance, floating orbs and collage, rotating word,
+     trust marquee, scroll reveal, shine on promo bands
+   - Auth: role cards, numbered register sections, login role tabs
+   Everything animated is switched off for prefers-reduced-motion.
+   ===================================================================== */
+
+@keyframes ss-fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes ss-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes ss-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-30px, 24px) scale(1.08); }
+}
+
+@keyframes ss-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+@keyframes ss-word-in {
+  from { opacity: 0; transform: translateY(0.45em); filter: blur(4px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+
+@keyframes ss-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes ss-shine {
+  0%, 70% { transform: translateX(-120%) skewX(-18deg); }
+  100%    { transform: translateX(220%) skewX(-18deg); }
+}
+
+/* ------------------------------------------------------------ scroll reveal */
+
+.ss-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--ss-reveal-delay, 0ms);
+}
+
+.ss-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ------------------------------------------------------------------- hero */
+
+.ss-hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(8px);
+  z-index: -1;
+  pointer-events: none;
+  animation: ss-drift 14s ease-in-out infinite;
+}
+
+.ss-hero-orb-1 {
+  width: 340px;
+  height: 340px;
+  left: -120px;
+  bottom: -160px;
+  background: radial-gradient(circle, rgba(40, 116, 240, 0.45), transparent 65%);
+}
+
+.ss-hero-orb-2 {
+  width: 260px;
+  height: 260px;
+  right: 30%;
+  top: -120px;
+  background: radial-gradient(circle, rgba(252, 163, 17, 0.25), transparent 65%);
+  animation-duration: 18s;
+  animation-direction: reverse;
+}
+
+/* Staggered entrance of the hero copy. */
+.ss-hero-copy > * {
+  animation: ss-fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.ss-hero-copy > :nth-child(1) { animation-delay: 0.05s; }
+.ss-hero-copy > :nth-child(2) { animation-delay: 0.15s; }
+.ss-hero-copy > :nth-child(3) { animation-delay: 0.25s; }
+.ss-hero-copy > :nth-child(4) { animation-delay: 0.35s; }
+.ss-hero-copy > :nth-child(5) { animation-delay: 0.45s; }
+.ss-hero-copy > :nth-child(6) { animation-delay: 0.55s; }
+
+.ss-rotator {
+  display: inline-block;
+  min-width: 4.2ch;
+}
+
+.ss-rotator-word {
+  display: inline-block;
+  font-style: normal;
+  color: var(--ss-orange);
+  animation: ss-word-in 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.ss-hero-float > * {
+  animation: ss-float 6s ease-in-out infinite;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+.ss-hero-float > :nth-child(2) { animation-delay: -1.5s; }
+.ss-hero-float > :nth-child(3) { animation-delay: -3s; }
+.ss-hero-float > :nth-child(4) { animation-delay: -4.5s; }
+
+.ss-hero-float > a:hover {
+  animation-play-state: paused;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+.ss-hero-float img {
+  transition: transform 0.6s ease;
+}
+
+.ss-hero-float > a:hover img {
+  transform: scale(1.07);
+}
+
+/* ---------------------------------------------------------- trust marquee */
+
+.ss-marquee {
+  margin-top: 1rem;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--ss-line);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+
+.ss-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: ss-marquee 32s linear infinite;
+}
+
+.ss-marquee:hover .ss-marquee-track {
+  animation-play-state: paused;
+}
+
+.ss-marquee ul {
+  display: flex;
+  gap: 2.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0.75rem 1.375rem;
+}
+
+.ss-marquee li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--ss-navy);
+}
+
+.ss-marquee li i {
+  color: var(--ss-blue);
+}
+
+/* --------------------------------------------- cards, bands and nav polish */
+
+.ss-cat-card,
+.ss-cat-card-img img {
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.ss-cat-card:hover .ss-cat-card-img img {
+  transform: scale(1.08);
+}
+
+.ss-product-card .ss-product-media img {
+  transition: transform 0.5s ease;
+}
+
+.ss-product-card:hover .ss-product-media img {
+  transform: scale(1.05);
+}
+
+.ss-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.ss-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  animation: ss-shine 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Fade the edges of the scrollable category bar so cut-off items look intentional. */
+@media (max-width: 991.98px) {
+  .ss-catbar-inner {
+    -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent);
+    mask-image: linear-gradient(90deg, #000 88%, transparent);
+    padding-right: 2rem;
+  }
+}
+
+/* =================================================================== auth */
+
+.ss-auth-fade {
+  animation: ss-fade-in 0.6s ease both;
+}
+
+.ss-auth-rise {
+  animation: ss-fade-up 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.ss-authpage-form-wide {
+  max-width: 600px;
+}
+
+.ss-authpage-form form {
+  animation: ss-fade-up 0.4s ease both;
+}
+
+/* Sign-up progress: Account type → Your details → Verify email */
+.ss-reg-progress {
+  display: flex;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+  counter-reset: step;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ss-muted);
+}
+
+.ss-reg-progress li {
+  flex: 1;
+  counter-increment: step;
+  padding-top: 0.55rem;
+  border-top: 3px solid var(--ss-line);
+}
+
+.ss-reg-progress li::before {
+  content: counter(step) '. ';
+}
+
+.ss-reg-progress li.done {
+  border-color: var(--ss-blue);
+  color: var(--ss-blue);
+}
+
+.ss-reg-progress li.current {
+  border-color: var(--ss-orange);
+  color: var(--ss-navy);
+}
+
+/* Role picker */
+.ss-role-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.ss-role-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 1rem;
+  border: 1px solid var(--ss-line-strong);
+  border-radius: 14px;
+  background: #fff;
+  text-align: left;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.ss-role-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ss-shadow);
+}
+
+.ss-role-card:focus-visible {
+  outline: 3px solid var(--ss-blue-soft);
+  outline-offset: 2px;
+}
+
+.ss-role-card-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  margin-bottom: 0.5rem;
+  background: var(--ss-blue-soft);
+  color: var(--ss-blue);
+  font-size: 1.25rem;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.ss-role-card strong {
+  color: var(--ss-navy);
+  font-size: 1rem;
+}
+
+.ss-role-card small {
+  color: var(--ss-muted);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.ss-role-card-check {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  color: var(--ss-blue);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.ss-role-card.selected {
+  border-color: var(--ss-blue);
+  box-shadow: inset 0 0 0 1px var(--ss-blue), var(--ss-shadow);
+}
+
+.ss-role-card.selected .ss-role-card-icon {
+  background: var(--ss-blue);
+  color: #fff;
+}
+
+.ss-role-card.selected .ss-role-card-check {
+  opacity: 1;
+  transform: none;
+}
+
+.ss-role-needs {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  background: var(--ss-orange-soft);
+  font-size: 0.85rem;
+  color: var(--ss-navy);
+}
+
+.ss-role-needs i {
+  color: var(--ss-orange-dark);
+  margin-top: 0.1rem;
+}
+
+/* Numbered form sections */
+.ss-reg-section {
+  padding: 1.25rem;
+  border: 1px solid var(--ss-line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+/* float + full width keeps the legend inside the card instead of on its border (Bootstrap clears the next sibling). */
+.ss-reg-section legend {
+  float: left;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 0.9rem;
+  font-family: var(--ss-heading);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ss-navy);
+}
+
+.ss-reg-num {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ss-navy);
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+/* Small option tiles (business type, vehicle) */
+.ss-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.ss-choice-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.ss-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--ss-line-strong);
+  border-radius: 10px;
+  background: #fff;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.ss-choice strong {
+  font-size: 0.88rem;
+  color: var(--ss-navy);
+}
+
+.ss-choice small {
+  font-size: 0.74rem;
+  color: var(--ss-muted);
+}
+
+.ss-choice-icon {
+  align-items: center;
+  text-align: center;
+  gap: 0.25rem;
+}
+
+.ss-choice-icon i {
+  font-size: 1.35rem;
+  color: var(--ss-blue);
+}
+
+.ss-choice.selected {
+  border-color: var(--ss-blue);
+  background: var(--ss-blue-soft);
+  box-shadow: inset 0 0 0 1px var(--ss-blue);
+}
+
+/* Login role tabs */
+.ss-login-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  margin: 1rem 0 0.75rem;
+  border-radius: 12px;
+  background: #eef0f3;
+}
+
+.ss-login-tabs button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.5rem 0.25rem;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--ss-muted);
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ss-login-tabs button i {
+  font-size: 1.05rem;
+}
+
+.ss-login-tabs button.active {
+  background: #fff;
+  color: var(--ss-blue);
+  box-shadow: 0 1px 4px rgba(20, 33, 61, 0.12);
+}
+
+@media (max-width: 575.98px) {
+  .ss-role-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .ss-role-card {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 0.75rem;
+  }
+
+  .ss-role-card-icon {
+    margin-bottom: 0;
+  }
+
+  .ss-role-card small {
+    flex-basis: 100%;
+  }
+
+  .ss-choice-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ss-reg-section {
+    padding: 1rem;
+  }
+}
+
+/* ======================================================== reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .ss-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .ss-hero-orb,
+  .ss-hero-copy > *,
+  .ss-rotator-word,
+  .ss-hero-float > *,
+  .ss-shine::after,
+  .ss-auth-fade,
+  .ss-auth-rise,
+  .ss-authpage-form form {
+    animation: none;
+  }
+
+  .ss-marquee-track {
+    animation: none;
+    width: auto;
+    flex-wrap: wrap;
+  }
+
+  .ss-marquee ul[aria-hidden='true'] {
+    display: none;
+  }
+
+  .ss-role-card,
+  .ss-cat-card-img img,
+  .ss-product-card .ss-product-media img,
+  .ss-hero-float img {
+    transition: none;
+  }
+}
+
+/* The hero stat labels style every span; keep the animated numbers at the number size. */
+.ss-hero-stats strong span {
+  font-size: inherit;
+  color: inherit;
+}
+
+/* "Try a demo account" panel on the sign-in page */
+.ss-demo-box {
+  padding: 1rem;
+  border: 1px dashed var(--ss-line-strong);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.ss-demo-box > div:first-child i {
+  color: var(--ss-orange);
+}
+
+.ss-demo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.ss-demo-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--ss-line);
+  border-radius: 10px;
+  background: var(--ss-bg);
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.ss-demo-btn:hover:not(:disabled) {
+  border-color: var(--ss-blue);
+  background: var(--ss-blue-soft);
+  transform: translateY(-1px);
+}
+
+.ss-demo-btn > i {
+  font-size: 1.15rem;
+  color: var(--ss-blue);
+}
+
+.ss-demo-btn span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ss-demo-btn strong {
+  font-size: 0.82rem;
+  color: var(--ss-navy);
+}
+
+.ss-demo-btn small {
+  font-size: 0.7rem;
+  color: var(--ss-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 575.98px) {
+  .ss-demo-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ss-demo-chip {
+  border: 1px solid var(--ss-line);
+  border-radius: 999px;
+  background: var(--ss-bg);
+  padding: 0.2rem 0.65rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--ss-navy);
+}
+
+.ss-demo-chip:hover:not(:disabled) {
+  border-color: var(--ss-blue);
+  color: var(--ss-blue);
+}
+
+/* ======================================================= live tracking */
+
+@keyframes ss-live-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(22, 163, 74, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+
+@keyframes ss-step-arrive {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+@keyframes ss-pop {
+  0% { transform: scale(0.85); opacity: 0.4; }
+  100% { transform: none; opacity: 1; }
+}
+
+.ss-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--ss-line);
+  background: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ss-muted);
+  white-space: nowrap;
+}
+
+.ss-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9aa3b2;
+}
+
+.ss-live-pill.on {
+  color: #15803d;
+  border-color: rgba(22, 163, 74, 0.35);
+  background: #f0fdf4;
+}
+
+.ss-live-pill.on .ss-live-dot {
+  background: #16a34a;
+  animation: ss-live-pulse 1.8s ease-out infinite;
+}
+
+/* The step that was just reached pops in when the status changes. */
+.ss-timeline-step.current .ss-timeline-dot {
+  animation: ss-step-arrive 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.ss-status-pop,
+.ss-now-with {
+  display: inline-block;
+  animation: ss-pop 0.45s ease both;
+}
+
+.ss-now-with {
+  display: block;
+}
+
+/* Tracking history: newest first, a vertical line connecting the steps. */
+.ss-track-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0 0 0 1.1rem;
+  border-left: 2px solid var(--ss-line);
+}
+
+.ss-track-list li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 0.6rem 0.4rem;
+  font-size: 0.82rem;
+}
+
+.ss-track-list li::before {
+  content: '';
+  position: absolute;
+  left: -1.47rem;
+  top: 0.3rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ss-line-strong);
+  border: 2px solid #fff;
+}
+
+.ss-track-list li.latest::before {
+  background: var(--ss-blue);
+  animation: ss-live-pulse 1.8s ease-out 2;
+}
+
+.ss-track-list li.latest .ss-track-text {
+  font-weight: 600;
+  color: var(--ss-navy);
+}
+
+.ss-track-time {
+  font-size: 0.74rem;
+  color: var(--ss-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ss-live-pill.on .ss-live-dot,
+  .ss-timeline-step.current .ss-timeline-dot,
+  .ss-status-pop,
+  .ss-now-with,
+  .ss-track-list li.latest::before {
+    animation: none;
+  }
+}

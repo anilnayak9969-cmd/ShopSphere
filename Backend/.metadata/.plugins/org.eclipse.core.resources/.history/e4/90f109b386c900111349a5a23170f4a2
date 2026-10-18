@@ -1,0 +1,26 @@
+# LOCAL SECRETS - this file is git-ignored. Never commit it.
+
+spring.datasource.password=root
+
+spring.app.jwtSecret=qwertyasdfghzxcvbnryuicvbnmwesrtdfyguisdfgfhZxcvbnsdfghsdfgewrtysxcvwertyuidfghb
+
+razorpay.key.id=rzp_test_TiaZ18zOPxRZ5M
+razorpay.key.secret=gIx1Xq7MoZW21la4vG0ehqdX
+# Razorpay Dashboard > Webhooks > secret (different from the API key secret). Empty = webhook disabled.
+razorpay.webhook.secret=
+
+# Gmail: use an App Password (Google Account > Security > 2-Step Verification > App passwords),
+# not your normal password. Leave both empty to print OTP codes in the server console instead.
+spring.mail.username=gme850400@gmail.com
+spring.mail.password=ufzhguxznnaygftg
+
+
+# First administrator account (created at startup if no admin exists)
+app.admin.email=admin@shopsphere.com
+app.admin.password=Admin@12345
+
+# Password for every demo account created with the demo data (customer, seller stores, delivery partner).
+# Shown on the sign-in page as "Try a demo account" while app.seed.demo-data=true.
+app.demo.password=Demo@12345
+# Also list the admin login as a demo button (local development only; keep false anywhere public)
+app.demo.show-admin-login=true
