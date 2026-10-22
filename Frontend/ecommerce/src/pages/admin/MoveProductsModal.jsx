@@ -74,11 +74,16 @@ export default function MoveProductsModal({ category, onClose, onMoved }) {
         </button>
       }
     >
-      <div className="ss-toolbar-search mb-3">
-        <i className="bi bi-search" aria-hidden="true" />
+      <div className="position-relative mb-3">
+        <i
+          className="bi bi-search position-absolute top-50 translate-middle-y text-muted"
+          style={{ left: '0.85rem' }}
+          aria-hidden="true"
+        />
         <input
           type="search"
-          className="form-control form-control-sm"
+          className="form-control"
+          style={{ paddingLeft: '2.3rem' }}
           placeholder="Search products by name, brand or SKU"
           aria-label="Search products"
           value={search}
@@ -95,17 +100,17 @@ export default function MoveProductsModal({ category, onClose, onMoved }) {
       ) : products.length === 0 ? (
         <p className="text-muted small mb-0">No products match “{search}”.</p>
       ) : (
-        <ul className="list-unstyled d-grid gap-2 mb-0">
+        <ul className="list-unstyled d-flex flex-column gap-2 mb-0">
           {products.map((p) => {
             const here = p.categoryId === category.categoryId
             return (
-              <li key={p.productId} className="d-flex align-items-center gap-3 border rounded-3 p-2">
+              <li key={p.productId} className="d-flex flex-wrap flex-sm-nowrap align-items-center gap-2 gap-sm-3 border rounded-3 p-2 min-w-0">
                 <div className="ss-thumb">
                   <SafeImage src={p.imageUrl} alt="" />
                 </div>
-                <div className="min-w-0 flex-grow-1">
-                  <div className="ss-cell-title text-truncate">{p.productName}</div>
-                  <div className="ss-cell-sub">
+                <div className="min-w-0 flex-grow-1" style={{ flexBasis: 0 }}>
+                  <div className="ss-cell-title text-truncate" title={p.productName}>{p.productName}</div>
+                  <div className="ss-cell-sub text-truncate">
                     {p.storeName} · {formatPrice(p.sellingPrice)} · in <strong>{p.categoryName}</strong>
                   </div>
                 </div>
