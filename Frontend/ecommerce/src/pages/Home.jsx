@@ -88,13 +88,10 @@ export default function Home() {
     categoryService
       .getCategories()
       .then((list) => {
-        // Show top-level departments with the product count of the whole department.
+        // Show top-level departments that have products customers can buy, with the whole department's count.
         const tree = toCategoryTree(list)
         setDepartments(
-          tree.map((d) => ({
-            ...d,
-            total: d.activeProductCount + d.children.reduce((s, c) => s + c.activeProductCount, 0),
-          })),
+          tree.filter((d) => d.totalLiveProductCount > 0).map((d) => ({ ...d, total: d.totalLiveProductCount })),
         )
       })
       .catch(() => setDepartments([]))

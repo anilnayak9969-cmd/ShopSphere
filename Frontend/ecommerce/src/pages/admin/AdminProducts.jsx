@@ -27,7 +27,8 @@ export default function AdminProducts() {
   const approval = raw === 'ALL' ? '' : raw === 'APPROVED' || raw === 'REJECTED' ? raw : 'PENDING'
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search.trim(), 300)
-  const [categoryId, setCategoryId] = useState('')
+  // ?categoryId= comes from the Categories page ("Review N awaiting approval").
+  const [categoryId, setCategoryId] = useState(() => params.get('categoryId') || '')
   const [categories, setCategories] = useState([])
   const { result, error, reload, setPage, setResult } = usePagedList(
     (page) => adminService.getProducts({ search: debouncedSearch, categoryId, approval, page, size: 10 }),

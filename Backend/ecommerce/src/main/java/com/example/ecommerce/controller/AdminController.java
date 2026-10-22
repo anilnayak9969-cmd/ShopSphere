@@ -28,6 +28,7 @@ import com.example.ecommerce.dtos.common.StatusUpdateRequest;
 import com.example.ecommerce.dtos.order.OrderResponse;
 import com.example.ecommerce.dtos.order.OrderStatusUpdateRequest;
 import com.example.ecommerce.dtos.order.PaymentResponse;
+import com.example.ecommerce.dtos.product.ProductCategoryRequest;
 import com.example.ecommerce.dtos.product.ProductResponse;
 import com.example.ecommerce.dtos.product.RejectProductRequest;
 import com.example.ecommerce.dtos.returns.ReturnDecisionRequest;
@@ -124,6 +125,11 @@ public class AdminController {
     @PatchMapping("/products/{id}/approve")
     public ProductResponse approveProduct(@PathVariable Long id) {
         return productService.approve(id);
+    }
+
+    @PatchMapping("/products/{id}/category")
+    public ProductResponse moveProduct(@PathVariable Long id, @Valid @RequestBody ProductCategoryRequest request) {
+        return productService.moveToCategory(id, request.categoryId());
     }
 
     @PatchMapping("/products/{id}/reject")

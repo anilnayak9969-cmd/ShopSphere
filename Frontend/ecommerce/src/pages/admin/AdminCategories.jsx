@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import adminService from '../../services/adminService'
+import MoveProductsModal from './MoveProductsModal'
 import categoryService from '../../services/categoryService'
 import { useToast } from '../../context/ToastContext'
 import useDebounce from '../../hooks/useDebounce'
@@ -59,6 +61,9 @@ export default function AdminCategories() {
   const [targetCategoryId, setTargetCategoryId] = useState('')
   const [activeCategories, setActiveCategories] = useState([])
   const [working, setWorking] = useState(false)
+
+  // "Add products" modal: move existing products into a category
+  const [filling, setFilling] = useState(null)
 
   const load = useCallback(() => {
     setError(null)
@@ -331,8 +336,28 @@ export default function AdminCategories() {
                       </div>
                     </td>
                     <td>
-                      <div className="fw-bold">{c.productCount}</div>
-                      <div className="ss-cell-sub">{c.activeProductCount} active</div>
+                      <div className="fw-bold">{c.totalProductCount}</div>
+                      <div className="ss-cell-sub">{c.totalLiveProductCount} live in store</div>
+                      {c.totalProductCount > c.productCount && (
+                        <div className="ss-cell-sub">incl. subcategories</div>
+                      )}
+                      {c.pendingProductCount > 0 && (
+                        <Link
+                          to={`/admin/products?categoryId=${c.categoryId}`}
+                          className="ss-cell-sub d-block text-warning-emphasis fw-semibold"
+                        >
+                          Review {c.pendingProductCount} awaiting approval →
+                        </Link>
+                      )}
+                      {c.active && c.totalLiveProductCount === 0 && (
+                        <div className="ss-cell-sub fst-italic">Hidden from shoppers until a product goes live</div>
+                      )}
+                      {c.active && (
+                        <button type="button" className="btn btn-link btn-sm p-0 fw-semibold" onClick={() => setFilling(c)}>
+                          <i className="bi bi-plus-circle me-1" aria-hidden="true" />
+                          Add products
+                        </button>
+                      )}
                     </td>
                     <td>
                       <ActiveBadge active={c.active} />
@@ -427,6 +452,8 @@ export default function AdminCategories() {
           />
         </form>
       </Modal>
+
+      <MoveProductsModal category={filling} onClose={() => setFilling(null)} onMoved={refreshAll} />
 
       {/* Deactivate (soft delete) with the "reassign products first" warning */}
       <Modal

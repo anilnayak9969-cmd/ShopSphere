@@ -3,8 +3,9 @@ import { useSearchParams } from 'react-router-dom'
 import categoryService, { toCategoryTree } from '../services/categoryService'
 import productService from '../services/productService'
 import ProductCard from '../components/ProductCard'
+import CategoryCard from '../components/CategoryCard'
 import Pagination from '../components/Pagination'
-import { EmptyState, ErrorState, ProductGridSkeleton } from '../components/ui'
+import { EmptyState, ErrorState, ProductGridSkeleton, SafeImage } from '../components/ui'
 import { getErrorMessage } from '../utils/errors'
 import { formatPrice } from '../utils/format'
 
@@ -86,7 +87,22 @@ export default function Products() {
     load()
   }, [load])
 
-  const tree = useMemo(() => toCategoryTree(categories), [categories])
+  // Customers only see categories with something to buy: a category an admin just created stays hidden
+  // until its first product is approved and live.
+  const shopCategories = useMemo(() => categories.filter((c) => c.totalLiveProductCount > 0), [categories])
+  const tree = useMemo(() => toCategoryTree(shopCategories), [shopCategories])
+
+  // An old or shared link to a hidden (empty or deactivated) category falls back to all products.
+  useEffect(() => {
+    if (!categoryId || categories.length === 0) return
+    if (!shopCategories.some((c) => String(c.categoryId) === categoryId)) {
+      const next = new URLSearchParams(params)
+      next.delete('categoryId')
+      next.delete('brand')
+      next.delete('page')
+      setParams(next, { replace: true })
+    }
+  }, [categoryId, categories, shopCategories, params, setParams])
 
   /** Updates query params; any filter change resets to page 0 so results never look empty. */
   const update = (changes, keepPage = false) => {
@@ -113,11 +129,14 @@ export default function Products() {
     setFiltersOpen(false)
   }
 
-  const activeCategory = categories.find((c) => String(c.categoryId) === categoryId)
+  const activeCategory = shopCategories.find((c) => String(c.categoryId) === categoryId)
+  const showCategoryHeader = Boolean(activeCategory) && !search
+  const subcategories = activeCategory ? tree.find((d) => d.categoryId === activeCategory.categoryId)?.children || [] : []
   const title = search
     ? `Results for “${search}”`
     : activeCategory?.categoryName || (minDiscount ? 'Deals & offers' : 'All products')
   const hasFilters = search || categoryId || selectedBrands.length || minPrice || maxPrice || inStock || minRating || minDiscount
+  const categoryOnly = categoryId && !search && !selectedBrands.length && !minPrice && !maxPrice && !inStock && !minRating && !minDiscount
   const priceInvalid = priceDraft.min && priceDraft.max && Number(priceDraft.min) > Number(priceDraft.max)
 
   const filterPanel = (
@@ -143,6 +162,7 @@ export default function Products() {
                 onClick={() => update({ categoryId: c.categoryId, brand: [] })}
               >
                 {c.categoryName}
+                {c.children.length === 0 && <small>{c.totalLiveProductCount}</small>}
               </button>
               {c.children.map((child) => (
                 <button
@@ -152,7 +172,7 @@ export default function Products() {
                   onClick={() => update({ categoryId: child.categoryId, brand: [] })}
                 >
                   {child.categoryName}
-                  <small>{child.activeProductCount}</small>
+                  <small>{child.totalLiveProductCount}</small>
                 </button>
               ))}
             </div>
@@ -271,14 +291,24 @@ export default function Products() {
   return (
     <div className="container ss-page">
       <div className="ss-section-head mb-3">
-        <div>
-          <h1 className="h3 mb-0">{title}</h1>
-          {result && (
-            <p className="text-muted mb-0 small">
-              {result.totalElements} {result.totalElements === 1 ? 'product' : 'products'}
-              {result.totalPages > 1 && ` · page ${result.page + 1} of ${result.totalPages}`}
-            </p>
+        <div className="d-flex align-items-center gap-3 min-w-0">
+          {showCategoryHeader && activeCategory.imageUrl && (
+            <div className="ss-cat-heading-img">
+              <SafeImage src={activeCategory.imageUrl} alt="" width={160} eager />
+            </div>
           )}
+          <div className="min-w-0">
+            <h1 className="h3 mb-0">{title}</h1>
+            {showCategoryHeader && activeCategory.description && (
+              <p className="text-muted mb-0">{activeCategory.description}</p>
+            )}
+            {result && (
+              <p className="text-muted mb-0 small">
+                {result.totalElements} {result.totalElements === 1 ? 'product' : 'products'}
+                {result.totalPages > 1 && ` · page ${result.page + 1} of ${result.totalPages}`}
+              </p>
+            )}
+          </div>
         </div>
         <div className="d-flex gap-2 align-items-center">
           <button type="button" className="btn btn-ghost btn-sm d-lg-none" onClick={() => setFiltersOpen(true)}>
@@ -297,6 +327,17 @@ export default function Products() {
           </select>
         </div>
       </div>
+
+      {/* A department (e.g. Books) shows its subcategories as picture tiles, using each category's image. */}
+      {showCategoryHeader && subcategories.length > 0 && (
+        <div className="row g-3 row-cols-3 row-cols-sm-4 row-cols-md-6 mb-4">
+          {subcategories.map((c) => (
+            <div key={c.categoryId} className="col">
+              <CategoryCard category={c} productCount={c.totalLiveProductCount} />
+            </div>
+          ))}
+        </div>
+      )}
 
       {chips.length > 0 && (
         <div className="d-flex flex-wrap gap-2 mb-3">
@@ -321,6 +362,18 @@ export default function Products() {
             <ErrorState message={error} onRetry={load} />
           ) : !result ? (
             <ProductGridSkeleton count={6} cols="col-6 col-md-4" />
+          ) : result.content.length === 0 && categoryOnly ? (
+            <EmptyState
+              icon="bi-box-seam"
+              title={`No products in ${activeCategory?.categoryName || 'this category'} yet`}
+              action={
+                <button type="button" className="btn btn-ink" onClick={() => setParams({})}>
+                  Browse all products
+                </button>
+              }
+            >
+              New products are added here as soon as sellers list them. Check back soon.
+            </EmptyState>
           ) : result.content.length === 0 ? (
             <EmptyState
               icon="bi-search"

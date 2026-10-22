@@ -124,7 +124,7 @@ export default function Navbar() {
     if (!isShopper) return
     categoryService
       .getCategories()
-      .then((list) => setDepartments(toCategoryTree(list).slice(0, 7)))
+      .then((list) => setDepartments(toCategoryTree(list).filter((d) => d.totalLiveProductCount > 0).slice(0, 7)))
       .catch(() => setDepartments([]))
   }, [isShopper])
 

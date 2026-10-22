@@ -835,6 +835,23 @@ a {
   object-fit: cover;
 }
 
+/* Category picture beside the title on the products page */
+.ss-cat-heading-img {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--ss-sand);
+  border: 1px solid var(--ss-line);
+}
+
+.ss-cat-heading-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .ss-cat-card strong {
   font-size: 0.9rem;
   line-height: 1.25;

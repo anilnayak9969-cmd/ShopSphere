@@ -49,5 +49,8 @@ public interface ProductService {
 
     ProductResponse approve(Long productId);
 
+    /** Admin catalogue clean-up: moves a product to another active category without sending it back for review. */
+    ProductResponse moveToCategory(Long productId, Integer categoryId);
+
     ProductResponse reject(Long productId, String reason);
 }

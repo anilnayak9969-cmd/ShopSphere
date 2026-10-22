@@ -43,11 +43,20 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     /**
      * Product counts per category in ONE grouped query.
-     * Each row is [categoryId, totalProducts, activeProducts].
+     * Each row is [categoryId, totalProducts, activeProducts, liveProducts, pendingProducts].
+     * "Live" uses the same rule as the shop (ProductServiceImpl.isPubliclyVisible): switched on, approved by an
+     * admin, in an active category, and sold by an active, approved seller. "Pending" products are waiting for admin approval.
      */
     @Query("""
-            select p.category.categoryId, count(p), sum(case when p.active = true then 1 else 0 end)
-            from Product p
+            select p.category.categoryId, count(p), sum(case when p.active = true then 1 else 0 end),
+                   sum(case when p.active = true
+                             and p.approvalStatus = com.example.ecommerce.enums.ApprovalStatus.APPROVED
+                             and p.category.status = true
+                             and s.active = true
+                             and s.sellerStatus = com.example.ecommerce.enums.SellerStatus.APPROVED
+                            then 1 else 0 end),
+                   sum(case when p.approvalStatus = com.example.ecommerce.enums.ApprovalStatus.PENDING then 1 else 0 end)
+            from Product p join p.seller s
             where p.category.categoryId in :categoryIds
             group by p.category.categoryId
             """)

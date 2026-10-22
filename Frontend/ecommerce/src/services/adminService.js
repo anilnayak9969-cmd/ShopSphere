@@ -28,6 +28,7 @@ const adminService = {
   getProducts: (params) => api.get('/admin/products', { params: cleanParams(params) }).then((r) => r.data),
   setProductActive: (id, active) => api.patch(`/admin/products/${id}/status`, { active }).then((r) => r.data),
   approveProduct: (id) => api.patch(`/admin/products/${id}/approve`).then((r) => r.data),
+  moveProduct: (id, categoryId) => api.patch(`/admin/products/${id}/category`, { categoryId }).then((r) => r.data),
   rejectProduct: (id, reason) => api.patch(`/admin/products/${id}/reject`, { reason }).then((r) => r.data),
 
   // Orders, payments, returns

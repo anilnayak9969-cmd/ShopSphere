@@ -213,6 +213,21 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    public ProductResponse moveToCategory(Long productId, Integer categoryId) {
+        Product product = findAny(productId);
+        if (product.getCategory().getCategoryId().equals(categoryId)) {
+            throw ApiException.badRequest("SAME_CATEGORY", "This product is already in that category.");
+        }
+        Category category = requireActiveCategory(categoryId);
+        product.setCategory(category);
+        notificationService.notify(product.getSeller(), "Product moved to a new category",
+                "The ShopSphere team moved \"" + product.getProductName() + "\" to " + category.getCategoryName() + ".",
+                "/seller/products/" + product.getProductId() + "/edit");
+        return ProductResponse.from(productRepository.saveAndFlush(product));
+    }
+
+    @Override
+    @Transactional
     public ProductResponse reject(Long productId, String reason) {
         Product product = findAny(productId);
         product.setApprovalStatus(ApprovalStatus.REJECTED);

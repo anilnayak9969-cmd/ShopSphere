@@ -6,6 +6,12 @@ import { useEffect, useRef } from 'react'
  */
 export default function Modal({ open, title, subtitle, onClose, children, footer, size = '' }) {
   const dialogRef = useRef(null)
+  // Callers often pass a new onClose on every render; keep the latest in a ref so the effect below runs only
+  // when the dialog opens/closes — otherwise each keystroke would re-run it and yank focus back to the first field.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
 
   useEffect(() => {
     if (!open) return undefined
@@ -14,7 +20,7 @@ export default function Modal({ open, title, subtitle, onClose, children, footer
     ;(focusable || dialogRef.current)?.focus()
 
     const onKey = (event) => {
-      if (event.key === 'Escape') onClose?.()
+      if (event.key === 'Escape') onCloseRef.current?.()
     }
     document.addEventListener('keydown', onKey)
     const { overflow } = document.body.style
@@ -24,7 +30,7 @@ export default function Modal({ open, title, subtitle, onClose, children, footer
       document.body.style.overflow = overflow
       previouslyFocused?.focus?.()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 

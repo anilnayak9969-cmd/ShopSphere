@@ -74,7 +74,7 @@ public class CategoryServiceImpl implements CategoryService {
         category.setParent(resolveParent(request.parentCategoryId(), null));
         category.setStatus(true);
         Category saved = categoryRepository.save(category);
-        return CategoryResponse.from(saved, 0, 0);
+        return CategoryResponse.from(saved, new long[6]);
     }
 
     @Override
@@ -143,12 +143,23 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional(readOnly = true)
     public Set<Integer> withDescendants(Integer categoryId) {
+        return withDescendants(categoryId, childrenByParent());
+    }
+
+    // ---------------------------------------------------------------- helpers
+
+    /** parentId -> its direct subcategory ids, built from one query. */
+    private Map<Integer, List<Integer>> childrenByParent() {
         Map<Integer, List<Integer>> children = new HashMap<>();
         for (Object[] row : categoryRepository.parentLinks()) {
             if (row[1] != null) {
                 children.computeIfAbsent((Integer) row[1], k -> new java.util.ArrayList<>()).add((Integer) row[0]);
             }
         }
+        return children;
+    }
+
+    private static Set<Integer> withDescendants(Integer categoryId, Map<Integer, List<Integer>> children) {
         Set<Integer> result = new LinkedHashSet<>();
         Deque<Integer> queue = new ArrayDeque<>(List.of(categoryId));
         while (!queue.isEmpty()) {
@@ -159,8 +170,6 @@ public class CategoryServiceImpl implements CategoryService {
         }
         return result;
     }
-
-    // ---------------------------------------------------------------- helpers
 
     /**
      * Validates the requested parent: it must exist, be active, not be the category itself and not
@@ -205,21 +214,47 @@ public class CategoryServiceImpl implements CategoryService {
         return ApiException.conflict("DUPLICATE_CATEGORY", "A category named \"" + name + "\" already exists.");
     }
 
-    /** Runs one GROUP BY query for all categories on the page: categoryId -> [total, active]. */
+    /**
+     * Product counts for the categories on the page with one GROUP BY query (covering their subcategories too):
+     * categoryId -> [total, active, live, pending, totalWithSubcategories, liveWithSubcategories].
+     */
     private Map<Integer, long[]> productCounts(Collection<Integer> categoryIds) {
         Map<Integer, long[]> counts = new HashMap<>();
         if (categoryIds.isEmpty()) {
             return counts;
         }
-        for (Object[] row : productRepository.countByCategoryIds(categoryIds)) {
-            counts.put((Integer) row[0], new long[]{((Number) row[1]).longValue(), ((Number) row[2]).longValue()});
+        Map<Integer, List<Integer>> children = childrenByParent();
+        Map<Integer, Set<Integer>> subtree = new HashMap<>();
+        Set<Integer> allIds = new LinkedHashSet<>();
+        for (Integer id : categoryIds) {
+            Set<Integer> ids = withDescendants(id, children);
+            subtree.put(id, ids);
+            allIds.addAll(ids);
+        }
+        Map<Integer, long[]> direct = new HashMap<>(); // [total, active, live, pending]
+        for (Object[] row : productRepository.countByCategoryIds(allIds)) {
+            long[] c = new long[4];
+            for (int i = 0; i < 4; i++) {
+                c[i] = row[i + 1] == null ? 0 : ((Number) row[i + 1]).longValue();
+            }
+            direct.put((Integer) row[0], c);
+        }
+        for (Integer id : categoryIds) {
+            long[] own = direct.getOrDefault(id, new long[4]);
+            long total = 0;
+            long live = 0;
+            for (Integer sub : subtree.get(id)) {
+                long[] c = direct.getOrDefault(sub, new long[4]);
+                total += c[0];
+                live += c[2];
+            }
+            counts.put(id, new long[]{own[0], own[1], own[2], own[3], total, live});
         }
         return counts;
     }
 
     private static CategoryResponse toResponse(Category category, Map<Integer, long[]> counts) {
-        long[] c = counts.getOrDefault(category.getCategoryId(), new long[]{0, 0});
-        return CategoryResponse.from(category, c[0], c[1]);
+        return CategoryResponse.from(category, counts.getOrDefault(category.getCategoryId(), new long[6]));
     }
 
     private static String blankToNull(String value) {

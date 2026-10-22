@@ -94,12 +94,31 @@ class CategoryServiceImplTest {
         when(categoryRepository.findById(5)).thenReturn(Optional.of(audio));
         when(productRepository.countByCategoryCategoryIdAndActiveTrue(5)).thenReturn(0L);
         when(categoryRepository.saveAndFlush(audio)).thenReturn(audio);
-        when(productRepository.countByCategoryIds(List.of(5))).thenReturn(List.<Object[]>of(new Object[]{5, 2L, 0L}));
+        when(productRepository.countByCategoryIds(java.util.Set.of(5)))
+                .thenReturn(List.<Object[]>of(new Object[]{5, 2L, 0L, 0L, 0L}));
 
         CategoryResponse response = categoryService.softDelete(5);
 
         assertThat(response.active()).isFalse();
         assertThat(response.productCount()).isEqualTo(2);
+    }
+
+    @Test
+    void departmentCountsIncludeItsSubcategories() {
+        Category electronics = category(1, "Electronics", true);
+        when(categoryRepository.findById(1)).thenReturn(Optional.of(electronics));
+        when(categoryRepository.parentLinks()).thenReturn(List.<Object[]>of(
+                new Object[]{1, null}, new Object[]{2, 1}, new Object[]{3, 1}));
+        // Audio (2): 4 products, 3 live, 1 awaiting approval. Cameras (3): 2 products, both live.
+        when(productRepository.countByCategoryIds(java.util.Set.of(1, 2, 3))).thenReturn(List.<Object[]>of(
+                new Object[]{2, 4L, 4L, 3L, 1L}, new Object[]{3, 2L, 2L, 2L, 0L}));
+
+        CategoryResponse response = categoryService.getCategory(1);
+
+        assertThat(response.productCount()).isZero();
+        assertThat(response.liveProductCount()).isZero();
+        assertThat(response.totalProductCount()).isEqualTo(6);
+        assertThat(response.totalLiveProductCount()).isEqualTo(5);
     }
 
     @Test
