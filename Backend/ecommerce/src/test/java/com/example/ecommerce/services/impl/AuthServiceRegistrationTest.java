@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.example.ecommerce.dtos.auth.RegisterRequest;
 import com.example.ecommerce.entites.DeliveryPartnerProfile;
@@ -73,7 +74,12 @@ class AuthServiceRegistrationTest {
                                            String serviceCity) {
         return new RegisterRequest("Asha Rao", "asha@example.com", "9876543210", "Secret@123", role, terms,
                 storeName, type, "", pickupAddress, "Pune", "Maharashtra", "411001",
-                vehicle, vehicleNumber, serviceCity, "411001");
+                vehicle, vehicleNumber, serviceCity, "411001", null);
+    }
+
+    private static RegisterRequest adminRequest(String code) {
+        return new RegisterRequest("Neha Admin", "neha@example.com", "9876543211", "Secret@123", Role.ADMIN, true,
+                null, null, "", null, null, null, null, null, null, null, null, code);
     }
 
     @Test
@@ -89,9 +95,33 @@ class AuthServiceRegistrationTest {
     }
 
     @Test
-    void adminCanNeverBeSelfAssigned() {
-        assertThatThrownBy(() -> authService.register(request(Role.ADMIN, true, null, null, null, null, null, null)))
-                .isInstanceOf(ApiException.class).extracting("code").isEqualTo("INVALID_ROLE");
+    void adminSignUpIsOffWhenNoAccessCodeIsConfigured() {
+        assertThatThrownBy(() -> authService.register(adminRequest("anything")))
+                .isInstanceOf(ApiException.class).extracting("code").isEqualTo("ADMIN_REGISTRATION_DISABLED");
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void adminSignUpNeedsTheRightAccessCode() {
+        ReflectionTestUtils.setField(authService, "adminRegistrationCode", "Team-Code-2026");
+        assertThatThrownBy(() -> authService.register(adminRequest("wrong-code")))
+                .isInstanceOf(ApiException.class).extracting("code").isEqualTo("ADMIN_CODE_INVALID");
+        assertThatThrownBy(() -> authService.register(adminRequest(null)))
+                .isInstanceOf(ApiException.class).extracting("code").isEqualTo("ADMIN_CODE_INVALID");
+        verify(loginAttemptService, org.mockito.Mockito.times(2)).recordFailure("admin-registration-code");
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void adminWithTheRightAccessCodeIsCreatedAsAdmin() {
+        ReflectionTestUtils.setField(authService, "adminRegistrationCode", "Team-Code-2026");
+        authService.register(adminRequest(" Team-Code-2026 "));
+
+        ArgumentCaptor<User> saved = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(saved.capture());
+        assertThat(saved.getValue().getRole()).isEqualTo(Role.ADMIN);
+        assertThat(saved.getValue().getSellerStatus()).isNull();
+        verify(otpService).sendOtp(eq("neha@example.com"), anyString(), eq(OtpPurpose.REGISTRATION));
     }
 
     @Test
@@ -141,6 +171,17 @@ class AuthServiceRegistrationTest {
         ArgumentCaptor<DeliveryPartnerProfile> profile = ArgumentCaptor.forClass(DeliveryPartnerProfile.class);
         verify(deliveryPartnerProfileRepository).save(profile.capture());
         assertThat(profile.getValue().getVehicleNumber()).isNull();
+    }
+
+    @Test
+    void personNamePattern() {
+        String rule = com.example.ecommerce.dtos.common.ValidationPatterns.PERSON_NAME;
+        for (String ok : new String[]{"Anil Nayak", "A. R. Rahman", "D'Souza", "Mary-Jane", "अनिल नायक"}) {
+            assertThat(ok.matches(rule)).as(ok).isTrue();
+        }
+        for (String bad : new String[]{"abc123", "Ravi@Kumar", " Neha", ".Anil", "<script>"}) {
+            assertThat(bad.matches(rule)).as(bad).isFalse();
+        }
     }
 
     @Test

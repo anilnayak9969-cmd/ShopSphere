@@ -15,6 +15,10 @@ public final class ValidationPatterns {
     public static final String PHONE = "^[6-9]\\d{9}$";
     public static final String PHONE_MESSAGE = "Enter a valid 10-digit mobile number";
 
+    /** A person's name: letters (any language), spaces, dot, apostrophe and hyphen — no digits or symbols. */
+    public static final String PERSON_NAME = "^\\p{L}[\\p{L}\\p{M} .'-]*$"; // \p{M}: vowel signs in Hindi and other Indian scripts
+    public static final String PERSON_NAME_MESSAGE = "Use letters, spaces and . ' - only";
+
     public static final String PINCODE = "^[1-9]\\d{5}$";
     public static final String OTP = "^\\d{6}$";
 

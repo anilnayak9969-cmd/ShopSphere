@@ -12,14 +12,15 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
- * Sign-up for every self-service role. The first block applies to everyone; the seller block and the
- * delivery-partner block are required only for that role (checked in AuthServiceImpl, because which
- * fields are required depends on the chosen role).
+ * Sign-up for every role. The first block applies to everyone; the seller block, the delivery-partner
+ * block and the admin access code are required only for that role (checked in AuthServiceImpl, because
+ * which fields are required depends on the chosen role).
  */
 public record RegisterRequest(
         // ---- every role
         @NotBlank(message = "Full name is required")
         @Size(min = 2, max = 100, message = "Full name must be 2-100 characters")
+        @Pattern(regexp = ValidationPatterns.PERSON_NAME, message = ValidationPatterns.PERSON_NAME_MESSAGE)
         String fullName,
         @NotBlank(message = "Email is required")
         @Email(message = "Enter a valid email address")
@@ -31,7 +32,7 @@ public record RegisterRequest(
         @NotBlank(message = "Password is required")
         @Pattern(regexp = ValidationPatterns.PASSWORD, message = ValidationPatterns.PASSWORD_MESSAGE)
         String password,
-        /* CUSTOMER, SELLER or DELIVERY_PARTNER. ADMIN can never be self-assigned (checked in AuthServiceImpl). */
+        /* CUSTOMER, SELLER, DELIVERY_PARTNER, or ADMIN with the secret admin access code (checked in AuthServiceImpl). */
         @NotNull(message = "Choose an account type")
         Role role,
         @NotNull(message = "Please accept the terms and privacy policy")
@@ -57,7 +58,11 @@ public record RegisterRequest(
         String vehicleNumber,
         @Size(max = 80) String serviceCity,
         @Pattern(regexp = "^$|" + ValidationPatterns.PINCODE, message = "Enter a valid 6-digit PIN code")
-        String servicePincode) {
+        String servicePincode,
+
+        // ---- admin: the secret access code from app.admin.registration-code
+        @Size(max = 100, message = "Access code is too long")
+        String adminCode) {
 
     public boolean termsAccepted() {
         return Boolean.TRUE.equals(acceptTerms);

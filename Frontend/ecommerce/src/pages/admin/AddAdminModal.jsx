@@ -5,13 +5,13 @@ import Modal from '../../components/Modal'
 import { Field, PasswordInput } from '../../components/FormControls'
 import { Alert } from '../../components/ui'
 import { getErrorMessage, getFieldErrors } from '../../utils/errors'
-import { EMAIL_RE, PASSWORD_MESSAGE, PASSWORD_RE, PHONE_RE } from '../../utils/validators'
+import { EMAIL_RE, PASSWORD_MESSAGE, PASSWORD_RE, PERSON_NAME_RE, PHONE_RE } from '../../utils/validators'
 
 const EMPTY = { fullName: '', email: '', phone: '', password: '' }
 
 /**
- * Admin registration. Admins are never created from the public sign-up page; an existing admin adds them
- * here and shares the first password, which the new admin should change from My account.
+ * An existing admin adds another admin here and shares the first password, which the new admin should change
+ * from My account. (New admins can also sign up themselves with the admin access code.)
  */
 export default function AddAdminModal({ open, onClose, onCreated }) {
   const toast = useToast()
@@ -32,7 +32,9 @@ export default function AddAdminModal({ open, onClose, onCreated }) {
   const submit = async (event) => {
     event.preventDefault()
     const found = {}
-    if (form.fullName.trim().length < 2) found.fullName = 'Enter the full name'
+    const name = form.fullName.trim()
+    if (name.length < 2) found.fullName = 'Enter the full name'
+    else if (!PERSON_NAME_RE.test(name)) found.fullName = "Use letters, spaces and . ' - only"
     if (!EMAIL_RE.test(form.email.trim())) found.email = 'Enter a valid email address'
     if (!PHONE_RE.test(form.phone)) found.phone = 'Enter a valid 10-digit mobile number'
     if (!PASSWORD_RE.test(form.password)) found.password = PASSWORD_MESSAGE

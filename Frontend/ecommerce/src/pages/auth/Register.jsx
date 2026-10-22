@@ -6,7 +6,7 @@ import { Field, PasswordInput } from '../../components/FormControls'
 import { INDIAN_STATES } from '../../components/AddressForm'
 import { Alert } from '../../components/ui'
 import { getErrorMessage, getFieldErrors } from '../../utils/errors'
-import { EMAIL_RE, PASSWORD_MESSAGE, PASSWORD_RE, PHONE_RE, PINCODE_RE } from '../../utils/validators'
+import { EMAIL_RE, PASSWORD_MESSAGE, PASSWORD_RE, PERSON_NAME_RE, PHONE_RE, PINCODE_RE } from '../../utils/validators'
 import {
   BUSINESS_TYPES,
   GSTIN_RE,
@@ -38,12 +38,16 @@ const EMPTY = {
   vehicleNumber: '',
   serviceCity: '',
   servicePincode: '',
+  // admin
+  adminCode: '',
 }
 
 function validate(role, f) {
   const e = {}
-  if (f.fullName.trim().length < 2) e.fullName = 'Enter your full name'
-  if (!EMAIL_RE.test(f.email.trim())) e.email = 'Enter a valid email address'
+  const name = f.fullName.trim()
+  if (name.length < 2 || name.length > 100) e.fullName = 'Full name must be 2-100 characters'
+  else if (!PERSON_NAME_RE.test(name)) e.fullName = "Use letters, spaces and . ' - only"
+  if (!EMAIL_RE.test(f.email.trim()) || f.email.trim().length > 150) e.email = 'Enter a valid email address'
   if (!PHONE_RE.test(f.phone)) e.phone = 'Enter a valid 10-digit mobile number'
   if (role === 'SELLER') {
     if (f.storeName.trim().length < 2) e.storeName = 'Enter your store name'
@@ -62,6 +66,7 @@ function validate(role, f) {
     if (!f.serviceCity.trim()) e.serviceCity = 'City is required'
     if (!PINCODE_RE.test(f.servicePincode)) e.servicePincode = 'Enter a valid 6-digit PIN code'
   }
+  if (role === 'ADMIN' && !f.adminCode.trim()) e.adminCode = 'Enter the admin access code from the ShopSphere team'
   if (!PASSWORD_RE.test(f.password)) e.password = PASSWORD_MESSAGE
   if (f.confirmPassword !== f.password) e.confirmPassword = 'Passwords do not match'
   if (!f.acceptTerms) e.acceptTerms = 'Please accept the terms and privacy policy'
@@ -130,6 +135,7 @@ export default function Register() {
         vehicleNumber: partner && form.vehicleType !== 'BICYCLE' ? normaliseVehicleNumber(form.vehicleNumber) : null,
         serviceCity: partner ? form.serviceCity.trim() : null,
         servicePincode: partner ? form.servicePincode : null,
+        adminCode: role === 'ADMIN' ? form.adminCode.trim() : null,
       })
       toast.success(response.message)
       navigate('/verify-email', { state: { email: form.email.trim().toLowerCase() } })
@@ -164,7 +170,7 @@ export default function Register() {
       </ol>
 
       <span className="ss-eyebrow">Create account</span>
-      <h1>{role === 'SELLER' ? 'Apply to sell' : role === 'DELIVERY_PARTNER' ? 'Become a delivery partner' : 'Join ShopSphere'}</h1>
+      <h1>{role === 'SELLER' ? 'Apply to sell' : role === 'DELIVERY_PARTNER' ? 'Become a delivery partner' : role === 'ADMIN' ? 'Register as admin' : 'Join ShopSphere'}</h1>
       <p className="text-muted mb-4">Choose how you want to use ShopSphere. We verify every email with a one-time code.</p>
 
       {formError && (
@@ -210,10 +216,10 @@ export default function Register() {
 
       <form onSubmit={submit} noValidate className="d-grid gap-4" key={role}>
         <Section n={n++} title="Your details">
-          <Field id="fullName" label="Full name" autoComplete="name" value={form.fullName} onChange={set('fullName')} error={errors.fullName} />
+          <Field id="fullName" label="Full name" autoComplete="name" maxLength={100} value={form.fullName} onChange={set('fullName')} error={errors.fullName} />
           <div className="row g-3">
             <div className="col-md-7">
-              <Field id="email" label="Email" type="email" autoComplete="email" value={form.email} onChange={set('email')} error={errors.email} />
+              <Field id="email" label="Email" type="email" autoComplete="email" maxLength={150} value={form.email} onChange={set('email')} error={errors.email} />
             </div>
             <div className="col-md-5">
               <Field
@@ -291,6 +297,19 @@ export default function Register() {
                 />
               </div>
             </div>
+          </Section>
+        )}
+
+        {role === 'ADMIN' && (
+          <Section n={n++} title="Admin access" hint="Admin sign-up is protected: enter the secret access code the ShopSphere team gave you. Existing admins are notified of every new admin.">
+            <PasswordInput
+              id="adminCode"
+              label="Admin access code"
+              autoComplete="off"
+              value={form.adminCode}
+              onChange={set('adminCode')}
+              error={errors.adminCode}
+            />
           </Section>
         )}
 
@@ -389,7 +408,8 @@ export default function Register() {
           </button>
           <p className="small text-muted mb-0 mt-2 text-center">
             Next, we email you a 6-digit code to verify your address.
-            {role !== 'CUSTOMER' && ' Your application is then reviewed by our team.'}
+            {(role === 'SELLER' || role === 'DELIVERY_PARTNER') && ' Your application is then reviewed by our team.'}
+            {role === 'ADMIN' && ' After that you can sign in to the admin console straight away.'}
           </p>
         </div>
       </form>

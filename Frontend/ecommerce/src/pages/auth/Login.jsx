@@ -16,7 +16,7 @@ const ADMIN_ASIDE = {
   asideText: 'Review sellers and products, monitor orders and payments, and keep ShopSphere running smoothly.',
   image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1400&q=80',
   points: [
-    { icon: 'bi-shield-lock', text: 'Admin accounts are created by the platform team' },
+    { icon: 'bi-key', text: 'New admins register with the secret team access code' },
     { icon: 'bi-speedometer2', text: 'Live dashboards calculated from the database' },
     { icon: 'bi-person-check', text: 'Approve sellers, products and delivery partners' },
   ],
@@ -102,11 +102,9 @@ export default function Login() {
       asideText={aside.asideText}
       points={aside.points}
       topLink={
-        role !== 'ADMIN' && (
-          <>
-            New to ShopSphere? <Link to={`/register?role=${role}`}>Create an account</Link>
-          </>
-        )
+        <>
+          {role === 'ADMIN' ? 'New admin?' : 'New to ShopSphere?'} <Link to={`/register?role=${role}`}>{role === 'ADMIN' ? 'Register with access code' : 'Create an account'}</Link>
+        </>
       }
     >
       <span className="ss-eyebrow">Sign in</span>
@@ -228,6 +226,12 @@ export default function Login() {
               ))}
           </p>
         </div>
+      )}
+
+      {role === 'ADMIN' && (
+        <p className="small text-muted text-center mt-4 mb-0">
+          New admin? <Link to="/register?role=ADMIN">Register with the admin access code</Link>
+        </p>
       )}
 
       {role !== 'ADMIN' && (

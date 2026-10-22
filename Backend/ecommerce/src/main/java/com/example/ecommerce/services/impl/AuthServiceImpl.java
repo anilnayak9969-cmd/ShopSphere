@@ -2,6 +2,10 @@ package com.example.ecommerce.services.impl;
 
 import java.util.Locale;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -52,10 +56,23 @@ public class AuthServiceImpl implements AuthService {
     /** Checked when the email does not exist, so both cases take the same BCrypt time (hides which emails exist). */
     private volatile String dummyHash;
 
+    /**
+     * Secret code that lets someone register as ADMIN from the sign-up page. Empty = admin sign-up is off
+     * (admins are then created from the secrets file or by another admin). Share it only with the team.
+     */
+    @Value("${app.admin.registration-code:}")
+    private String adminRegistrationCode;
+
+    /** All wrong admin codes share one counter, so the code cannot be guessed by switching emails. */
+    private static final String ADMIN_CODE_LIMIT_KEY = "admin-registration-code";
+
     @Override
     @Transactional
     public MessageResponse register(RegisterRequest request) {
-        if (request.role() != Role.CUSTOMER && request.role() != Role.SELLER && request.role() != Role.DELIVERY_PARTNER) {
+        if (request.role() == Role.ADMIN) {
+            checkAdminCode(request.adminCode());
+        } else if (request.role() != Role.CUSTOMER && request.role() != Role.SELLER
+                && request.role() != Role.DELIVERY_PARTNER) {
             throw ApiException.badRequest("INVALID_ROLE", "You can register as a customer, a seller or a delivery partner.");
         }
         if (!request.termsAccepted()) {
@@ -117,6 +134,11 @@ public class AuthServiceImpl implements AuthService {
         } else if (user.getRole() == Role.DELIVERY_PARTNER) {
             notificationService.notifyAdmins("New delivery partner application",
                     user.getFullName() + " applied to deliver for ShopSphere.", "/admin/delivery-partners");
+        } else if (user.getRole() == Role.ADMIN) {
+            // Every admin hears about a new admin, so an unexpected one is noticed at once.
+            notificationService.notifyAdmins("New admin registered",
+                    user.getFullName() + " (" + user.getEmail() + ") registered as an admin with the access code.",
+                    "/admin/users?role=ADMIN");
         }
         return buildAuthResponse(user);
     }
@@ -209,6 +231,20 @@ public class AuthServiceImpl implements AuthService {
         return value == null || value.isBlank();
     }
     // ------------------------------------------------------------------ role-specific registration
+
+    private void checkAdminCode(String code) {
+        if (adminRegistrationCode == null || adminRegistrationCode.isBlank()) {
+            throw ApiException.forbidden("ADMIN_REGISTRATION_DISABLED",
+                    "Admin registration is turned off on this server. Ask an existing admin to add you.");
+        }
+        loginAttemptService.checkNotBlocked(ADMIN_CODE_LIMIT_KEY);
+        byte[] expected = adminRegistrationCode.trim().getBytes(StandardCharsets.UTF_8);
+        byte[] given = (code == null ? "" : code.trim()).getBytes(StandardCharsets.UTF_8);
+        if (!MessageDigest.isEqual(expected, given)) { // constant-time comparison
+            loginAttemptService.recordFailure(ADMIN_CODE_LIMIT_KEY);
+            throw ApiException.forbidden("ADMIN_CODE_INVALID", "The admin access code is not correct.");
+        }
+    }
 
     private static void validateSeller(RegisterRequest r) {
         if (isBlank(r.storeName())) {

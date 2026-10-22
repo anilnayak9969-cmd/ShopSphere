@@ -3,6 +3,8 @@
 
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 export const PHONE_RE = /^[6-9]\d{9}$/
+/** A person's name: letters (any language, incl. Hindi vowel signs), spaces, dot, apostrophe and hyphen; starts with a letter. */
+export const PERSON_NAME_RE = /^\p{L}[\p{L}\p{M} .'-]*$/u
 export const PASSWORD_RE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,64}$/
 export const PINCODE_RE = /^[1-9]\d{5}$/
 export const URL_RE = /^https?:\/\/\S+$/

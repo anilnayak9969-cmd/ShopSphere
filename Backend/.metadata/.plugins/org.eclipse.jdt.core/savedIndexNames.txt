@@ -5,7 +5,7 @@ INDEX VERSION 1.134+C:\Users\aniln\Downloads\InternShip_ITVedant\Ecommerce_Task\
 1938550172.index
 430024903.index
 1950517192.index
-132532512.index
+1388599637.index
 1377180515.index
 2002007824.index
 2872402271.index
@@ -80,7 +80,6 @@ INDEX VERSION 1.134+C:\Users\aniln\Downloads\InternShip_ITVedant\Ecommerce_Task\
 2637770290.index
 1457502788.index
 3699677351.index
-2290215115.index
 2855001174.index
 3242766250.index
 260159302.index
@@ -166,4 +165,4 @@ INDEX VERSION 1.134+C:\Users\aniln\Downloads\InternShip_ITVedant\Ecommerce_Task\
 1225916540.index
 2616138576.index
 1464250154.index
-1388599637.index
+132532512.index

@@ -58,13 +58,23 @@ export const ROLE_INFO = {
     label: 'Admin',
     icon: 'bi-shield-check',
     title: 'Admin',
-    tagline: 'Platform team only',
-    loginHint: 'Admin accounts cannot be registered publicly. An existing admin adds new admins from Admin → Users → Add admin.',
+    tagline: 'Platform team, access code needed',
+    needs: ['Admin access code from the ShopSphere team'],
+    loginHint: 'Manage categories, products, sellers, orders, payments and settings. New admins register with the team access code.',
+    asideTitle: 'Run the marketplace.',
+    asideText: 'Admins manage categories, products, sellers, orders, payments and every platform setting.',
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1400&q=80',
+    points: [
+      { icon: 'bi-key', text: 'Registration needs the secret admin access code' },
+      { icon: 'bi-speedometer2', text: 'Full admin console: categories, products, users, orders, reports' },
+      { icon: 'bi-bell', text: 'Every admin is notified when a new admin registers' },
+    ],
+    submit: 'Create admin account',
   },
 }
 
 /** Roles a visitor can choose on the Register page. */
-export const REGISTER_ROLES = ['CUSTOMER', 'SELLER', 'DELIVERY_PARTNER']
+export const REGISTER_ROLES = ['CUSTOMER', 'SELLER', 'DELIVERY_PARTNER', 'ADMIN']
 
 /** Tabs on the Login page. Signing in works the same for all; the tab only sets expectations. */
 export const LOGIN_ROLES = ['CUSTOMER', 'SELLER', 'DELIVERY_PARTNER', 'ADMIN']

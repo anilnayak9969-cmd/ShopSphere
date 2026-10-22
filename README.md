@@ -32,7 +32,7 @@ Built exactly against the given `categories` table (`category_id`, `category_nam
   | Customer | none | Can shop immediately |
   | Seller | Store name, business type (individual, proprietorship, partnership/LLP, private limited), GSTIN (optional, format-checked), pickup address (address, city, state, PIN) | Application `PENDING` until an admin approves |
   | Delivery partner | Vehicle (bicycle, motorcycle, scooter, electric scooter), registration number (not needed for a bicycle; Indian format, including BH series), service city and PIN | Application `PENDING` until an admin approves |
-  | Admin | Cannot self-register. The first admin comes from the secrets file; after that, an admin adds others from **Admin → Users → Add admin** (name, email, mobile, first password) | Active immediately and notified |
+  | Admin | Register → **Admin** card with the secret **admin access code** (`app.admin.registration-code`), or created by another admin from **Admin → Users → Add admin**. The first admin also comes from the secrets file | Signs in to the full admin console straight away. Every existing admin is notified. Wrong codes are rate-limited (5 tries, then a 15-minute lock). An empty code turns admin sign-up off |
 
   Identity documents (PAN, driving licence, bank details) are **not uploaded or stored**. They belong to in-person or KYC onboarding, which keeps sensitive data out of the database.
 - **Login with role tabs** (Customer · Seller · Delivery partner · Admin). One form works for every role, because the server decides the role from the account. The tab only adjusts the wording. After sign-in, each role goes to its own home: the store, `/seller`, `/delivery` or `/admin`.
@@ -199,6 +199,7 @@ Copy `Backend/ecommerce/src/main/resources/application-secrets.example.propertie
 | `razorpay.webhook.secret` | Optional. Razorpay Dashboard → Webhooks (see below). Leave empty to disable the webhook |
 | `spring.mail.username` / `spring.mail.password` | Gmail address + **Gmail App Password** (Google Account → Security → 2-Step Verification → App passwords) |
 | `app.admin.email` / `app.admin.password` | Login for the first admin account (more admins are added from Admin → Users) |
+| `app.admin.registration-code` | Secret code for admin sign-up on the Register page. Use a long random value; leave it empty to turn admin sign-up off |
 | `app.demo.password` | Password for all demo accounts (customer, stores, delivery partner) |
 | `app.demo.show-admin-login` | `true` only on your own machine, to list the admin as a demo button |
 
@@ -327,7 +328,7 @@ Money uses `DECIMAL(12,2)`. Products and categories are never hard-deleted, so o
 ```bash
 cd Backend/ecommerce && ./mvnw test
 ```
-There are **52 tests**: role-based registration (customer, seller and delivery partner rules, the admin block, vehicle-number formats), Category Management rules (including subcategory cycles), OTP security, Razorpay checkout and webhook signatures, idempotent payment verification, the sold-out refund path, coupon rules (caps, minimum order, expiry, usage limits, one use per customer), verified-purchase reviews, pricing, shipping and commission rules, COD checkout, and item-level order status derivation. The `contextLoads` test needs MySQL running.
+There are **54 tests**: role-based registration (customer, seller, delivery partner and admin access-code rules, vehicle-number formats), Category Management rules (including subcategory cycles), OTP security, Razorpay checkout and webhook signatures, idempotent payment verification, the sold-out refund path, coupon rules (caps, minimum order, expiry, usage limits, one use per customer), verified-purchase reviews, pricing, shipping and commission rules, COD checkout, and item-level order status derivation. The `contextLoads` test needs MySQL running.
 
 Frontend: `npm run lint` and `npm run build`.
 
@@ -336,7 +337,7 @@ A live-tracking run covered 13 checks: the customer's and partner's streams rece
 ---
 
 ## Deployment notes
-- Set secrets as **environment variables**, for example `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_PASSWORD`, `SPRING_APP_JWTSECRET`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, `APP_ADMIN_EMAIL`, `APP_ADMIN_PASSWORD`, `APP_FRONTEND_URLS` and `APP_FRONTEND_PUBLIC_URL`.
+- Set secrets as **environment variables**, for example `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_PASSWORD`, `SPRING_APP_JWTSECRET`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, `APP_ADMIN_EMAIL`, `APP_ADMIN_PASSWORD`, `APP_ADMIN_REGISTRATION_CODE`, `APP_FRONTEND_URLS` and `APP_FRONTEND_PUBLIC_URL`.
 - Set `APP_SEED_DEMO_DATA=false` in production.
 - Frontend: `VITE_API_BASE_URL=https://your-api/api npm run build`, then host `dist/` with SPA fallback so every route serves `index.html`.
 
