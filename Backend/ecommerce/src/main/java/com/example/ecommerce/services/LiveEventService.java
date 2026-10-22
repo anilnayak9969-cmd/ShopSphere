@@ -53,7 +53,11 @@ public class LiveEventService {
         Subscriber subscriber = new Subscriber(userId, role, emitter);
         byUser.computeIfAbsent(userId, id -> new CopyOnWriteArrayList<>()).add(subscriber);
         emitter.onCompletion(() -> remove(subscriber));
-        emitter.onTimeout(() -> remove(subscriber));
+        // Close the stream cleanly when it expires; without complete() Spring raises AsyncRequestTimeoutException.
+        emitter.onTimeout(() -> {
+            remove(subscriber);
+            emitter.complete();
+        });
         emitter.onError(e -> remove(subscriber));
         send(subscriber, "connected", Map.of("userId", userId));
         return emitter;

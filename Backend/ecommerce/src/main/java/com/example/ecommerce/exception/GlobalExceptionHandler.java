@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -100,6 +101,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AsyncRequestNotUsableException.class)
     public void handleAsyncNotUsable(AsyncRequestNotUsableException ex, HttpServletRequest request) {
         log.debug("Client disconnected from {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
+    }
+
+    /**
+     * A long-lived request (the live stream) reached its time limit. This is expected: the browser simply
+     * reconnects, so it is logged quietly instead of as a server error.
+     */
+    @ExceptionHandler(AsyncRequestTimeoutException.class)
+    public ResponseEntity<Void> handleAsyncTimeout(AsyncRequestTimeoutException ex, HttpServletRequest request) {
+        log.debug("Async request timed out on {} {}", request.getMethod(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
     }
 
     private static boolean isClientDisconnect(Throwable ex) {
