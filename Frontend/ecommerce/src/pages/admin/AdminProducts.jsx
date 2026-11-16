@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import adminService from '../../services/adminService'
 import categoryService from '../../services/categoryService'
@@ -8,31 +8,44 @@ import usePagedList from '../../hooks/usePagedList'
 import Modal, { ConfirmDialog } from '../../components/Modal'
 import Pagination from '../../components/Pagination'
 import { Field } from '../../components/FormControls'
-import { ActiveBadge, Alert, EmptyState, ErrorState, PageHeader, PageLoader, PriceTag, SafeImage, Segment, StatusBadge } from '../../components/ui'
+import { ActiveBadge, Alert, EmptyState, ErrorState, PageHeader, PageLoader, PriceTag, SafeImage, Segment, StatCard, StatusBadge } from '../../components/ui'
 import { getErrorMessage } from '../../utils/errors'
-import { formatDateTime, formatPrice } from '../../utils/format'
+import { formatDate, formatPrice } from '../../utils/format'
 
-const TABS = [
+/**
+ * Product Management module — the admin Product dashboard.
+ * View every product with its stock, price and status, add new products, edit them, and
+ * deactivate (soft delete) or reactivate them. The approval queue for seller listings is a tab here too.
+ */
+const APPROVAL_TABS = [
+  { value: '', label: 'All products' },
   { value: 'PENDING', label: 'Approval queue' },
   { value: 'APPROVED', label: 'Approved' },
   { value: 'REJECTED', label: 'Rejected' },
-  { value: '', label: 'All products' },
+]
+
+const STATUS_TABS = [
+  { value: '', label: 'All' },
+  { value: 'true', label: 'Active' },
+  { value: 'false', label: 'Inactive' },
 ]
 
 export default function AdminProducts() {
   const toast = useToast()
   const [params, setParams] = useSearchParams()
-  // ?approval=ALL shows every product; no parameter opens the approval queue.
-  const raw = params.get('approval')
-  const approval = raw === 'ALL' ? '' : raw === 'APPROVED' || raw === 'REJECTED' ? raw : 'PENDING'
+  const rawApproval = params.get('approval')
+  const approval = ['PENDING', 'APPROVED', 'REJECTED'].includes(rawApproval) ? rawApproval : ''
+  const rawStatus = params.get('status')
+  const status = rawStatus === 'active' ? 'true' : rawStatus === 'inactive' ? 'false' : ''
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search.trim(), 300)
   // ?categoryId= comes from the Categories page ("Review N awaiting approval").
   const [categoryId, setCategoryId] = useState(() => params.get('categoryId') || '')
   const [categories, setCategories] = useState([])
+  const [summary, setSummary] = useState(null)
   const { result, error, reload, setPage, setResult } = usePagedList(
-    (page) => adminService.getProducts({ search: debouncedSearch, categoryId, approval, page, size: 10 }),
-    [debouncedSearch, categoryId, approval],
+    (page) => adminService.getProducts({ search: debouncedSearch, categoryId, approval, active: status, page, size: 10 }),
+    [debouncedSearch, categoryId, approval, status],
   )
 
   const [toggleTarget, setToggleTarget] = useState(null)
@@ -42,17 +55,29 @@ export default function AdminProducts() {
   const [reviewError, setReviewError] = useState(null)
   const [busy, setBusy] = useState(false)
 
+  const loadSummary = useCallback(() => {
+    adminService.getProductSummary().then(setSummary).catch(() => setSummary(null))
+  }, [])
+
   useEffect(() => {
     categoryService.getCategories().then(setCategories).catch(() => setCategories([]))
-  }, [])
+    loadSummary()
+  }, [loadSummary])
+
+  const updateParams = (changes) => {
+    const next = new URLSearchParams(params)
+    Object.entries(changes).forEach(([key, value]) => (value ? next.set(key, value) : next.delete(key)))
+    setParams(next, { replace: true })
+  }
 
   const replaceOrDrop = (updated) =>
     setResult((r) => ({
       ...r,
-      // In a filtered tab, a product that changed approval state leaves the list.
-      content: approval && updated.approvalStatus !== approval
-        ? r.content.filter((p) => p.productId !== updated.productId)
-        : r.content.map((p) => (p.productId === updated.productId ? updated : p)),
+      // In a filtered view, a product that no longer matches the filter leaves the list.
+      content:
+        (approval && updated.approvalStatus !== approval) || (status && String(updated.active) !== status)
+          ? r.content.filter((p) => p.productId !== updated.productId)
+          : r.content.map((p) => (p.productId === updated.productId ? updated : p)),
     }))
 
   const toggle = async () => {
@@ -60,7 +85,8 @@ export default function AdminProducts() {
     try {
       const updated = await adminService.setProductActive(toggleTarget.productId, !toggleTarget.active)
       replaceOrDrop(updated)
-      toast.success(`${updated.productName} ${updated.active ? 'restored' : 'taken down'}.`)
+      loadSummary()
+      toast.success(updated.active ? `"${updated.productName}" is active again.` : `"${updated.productName}" has been deactivated.`)
       setToggleTarget(null)
     } catch (err) {
       toast.error(getErrorMessage(err))
@@ -88,6 +114,7 @@ export default function AdminProducts() {
         ? await adminService.approveProduct(review.productId)
         : await adminService.rejectProduct(review.productId, reason.trim())
       replaceOrDrop(updated)
+      loadSummary()
       toast.success(`${updated.productName} ${approve ? 'approved and visible in the store' : 'rejected'}.`)
       setReview(null)
     } catch (err) {
@@ -97,17 +124,52 @@ export default function AdminProducts() {
     }
   }
 
+  const lowStock = summary?.lowStockThreshold ?? 5
+
   return (
     <>
-      <PageHeader eyebrow="Catalog" title="Products" subtitle="Approve new listings and edits, and take down anything that breaks marketplace policy." />
-      <div className="mb-3">
+      <PageHeader
+        eyebrow="Catalog"
+        title="Product management"
+        subtitle="Add, update and deactivate products, keep an eye on stock, and approve new seller listings."
+        actions={
+          <Link to="/admin/products/new" className="btn btn-ink">
+            <i className="bi bi-plus-lg me-2" />
+            New product
+          </Link>
+        }
+      />
+
+      <div className="row g-3 mb-4">
+        <div className="col-6 col-lg-3">
+          <StatCard label="Total products" value={summary?.total ?? '—'} icon="bi-box-seam" foot="Active and inactive" />
+        </div>
+        <div className="col-6 col-lg-3">
+          <StatCard label="Active" value={summary?.active ?? '—'} icon="bi-check2-circle" foot="Switched on for the store" />
+        </div>
+        <div className="col-6 col-lg-3">
+          <StatCard label="Inactive" value={summary?.inactive ?? '—'} icon="bi-archive" foot="Soft deleted, hidden from customers" />
+        </div>
+        <div className="col-6 col-lg-3">
+          <StatCard
+            label="Low stock"
+            value={summary?.lowStock ?? '—'}
+            icon="bi-exclamation-triangle"
+            foot={`${lowStock} units or fewer · ${summary?.awaitingApproval ?? 0} awaiting approval`}
+          />
+        </div>
+      </div>
+
+      <div className="d-flex flex-wrap gap-2 justify-content-between mb-3">
+        <Segment label="Approval status" options={APPROVAL_TABS} value={approval} onChange={(value) => updateParams({ approval: value })} />
         <Segment
-          label="Approval status"
-          options={TABS}
-          value={approval}
-          onChange={(value) => setParams(value === 'PENDING' ? {} : { approval: value || 'ALL' }, { replace: true })}
+          label="Product status"
+          options={STATUS_TABS}
+          value={status}
+          onChange={(value) => updateParams({ status: value === 'true' ? 'active' : value === 'false' ? 'inactive' : '' })}
         />
       </div>
+
       <div className="ss-card overflow-hidden">
         <div className="ss-toolbar">
           <div className="ss-toolbar-search">
@@ -115,7 +177,7 @@ export default function AdminProducts() {
             <input
               type="search"
               className="form-control form-control-sm"
-              placeholder="Search name, brand or SKU"
+              placeholder="Search name, brand, SKU or category"
               aria-label="Search products"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -151,12 +213,12 @@ export default function AdminProducts() {
               <thead>
                 <tr>
                   <th>Product</th>
-                  <th>Seller</th>
                   <th>Category</th>
                   <th>Price</th>
                   <th>Stock</th>
                   <th>Status</th>
-                  <th className="text-end">Action</th>
+                  <th>Last updated</th>
+                  <th className="text-end">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -176,22 +238,29 @@ export default function AdminProducts() {
                             <div className="ss-cell-title">{p.productName}</div>
                           )}
                           <div className="ss-cell-sub">
-                            SKU {p.sku} · updated {formatDateTime(p.updatedAt)}
+                            SKU {p.sku} · {p.storeName}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td>{p.storeName}</td>
                     <td>
                       {p.categoryName}
-                      {!p.categoryActive && <div className="small text-danger">inactive</div>}
+                      {!p.categoryActive && <div className="small text-danger">category inactive</div>}
                     </td>
-                    <td>{formatPrice(p.sellingPrice)}</td>
-                    <td className={p.stockQuantity <= 5 ? 'text-danger fw-bold' : ''}>{p.stockQuantity}</td>
+                    <td className="text-nowrap">
+                      {formatPrice(p.sellingPrice)}
+                      {p.discountPercent > 0 && <div className="ss-cell-sub">MRP {formatPrice(p.price)}</div>}
+                    </td>
+                    <td className={p.stockQuantity <= lowStock ? 'text-danger fw-bold' : ''}>
+                      {p.stockQuantity}
+                      {p.stockQuantity === 0 ? <div className="small">out of stock</div> : p.stockQuantity <= lowStock && <div className="small">low stock</div>}
+                    </td>
                     <td>
                       <div className="d-flex flex-column align-items-start gap-1">
-                        <StatusBadge status={p.approvalStatus} label={p.approvalStatus === 'PENDING' ? 'Awaiting review' : undefined} />
-                        <ActiveBadge active={p.active} on="Seller: visible" off="Hidden" />
+                        <ActiveBadge active={p.active} />
+                        {p.approvalStatus !== 'APPROVED' && (
+                          <StatusBadge status={p.approvalStatus} label={p.approvalStatus === 'PENDING' ? 'Awaiting review' : undefined} />
+                        )}
                       </div>
                       {p.approvalStatus === 'REJECTED' && p.rejectionReason && (
                         <div className="ss-cell-sub mt-1" style={{ maxWidth: 200 }}>
@@ -199,21 +268,24 @@ export default function AdminProducts() {
                         </div>
                       )}
                     </td>
+                    <td className="text-nowrap">{formatDate(p.updatedAt)}</td>
                     <td className="text-end text-nowrap">
                       {p.approvalStatus !== 'APPROVED' && (
                         <button type="button" className="btn btn-sm btn-ink me-1" onClick={() => openReview(p)}>
                           Review
                         </button>
                       )}
-                      {p.approvalStatus === 'APPROVED' && (
-                        <button
-                          type="button"
-                          className={`btn btn-sm ${p.active ? 'btn-danger-soft' : 'btn-outline-ink'}`}
-                          onClick={() => setToggleTarget(p)}
-                        >
-                          {p.active ? 'Take down' : 'Restore'}
-                        </button>
-                      )}
+                      <Link to={`/admin/products/${p.productId}/edit`} className="btn btn-sm btn-outline-ink me-1">
+                        <i className="bi bi-pencil me-1" aria-hidden="true" />
+                        Edit
+                      </Link>
+                      <button
+                        type="button"
+                        className={`btn btn-sm ${p.active ? 'btn-danger-soft' : 'btn-outline-ink'}`}
+                        onClick={() => setToggleTarget(p)}
+                      >
+                        {p.active ? 'Deactivate' : 'Activate'}
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -226,16 +298,21 @@ export default function AdminProducts() {
 
       <ConfirmDialog
         open={Boolean(toggleTarget)}
-        title={toggleTarget?.active ? 'Take down this product?' : 'Restore this product?'}
-        confirmLabel={toggleTarget?.active ? 'Take down' : 'Restore'}
+        title={toggleTarget?.active ? `Deactivate “${toggleTarget?.productName}”?` : `Activate “${toggleTarget?.productName}”?`}
+        confirmLabel={toggleTarget?.active ? 'Deactivate' : 'Activate'}
         danger={toggleTarget?.active}
         busy={busy}
         onConfirm={toggle}
         onCancel={() => setToggleTarget(null)}
       >
-        {toggleTarget?.active
-          ? `${toggleTarget?.productName} by ${toggleTarget?.storeName} will be hidden from customers.`
-          : `${toggleTarget?.productName} will be visible to customers again.`}
+        {toggleTarget?.active ? (
+          <Alert variant="warning" className="mb-0">
+            <strong>Warning:</strong> deactivating this product will <strong>hide it from the customer interface</strong>. Customers can no longer find or buy it.
+            This is a soft delete: the product stays in the database with status <em>inactive</em>, so past orders keep it, and you can activate it again at any time.
+          </Alert>
+        ) : (
+          `${toggleTarget?.productName} will be visible to customers again (if it is approved and its category is active).`
+        )}
       </ConfirmDialog>
 
       <Modal

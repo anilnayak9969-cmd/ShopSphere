@@ -343,7 +343,7 @@ export default function AdminCategories() {
                       )}
                       {c.pendingProductCount > 0 && (
                         <Link
-                          to={`/admin/products?categoryId=${c.categoryId}`}
+                          to={`/admin/products?approval=PENDING&categoryId=${c.categoryId}`}
                           className="ss-cell-sub d-block text-warning-emphasis fw-semibold"
                         >
                           Review {c.pendingProductCount} awaiting approval →

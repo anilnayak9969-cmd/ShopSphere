@@ -42,7 +42,7 @@ export default function AdminDashboard() {
 
   const needsAttention = [
     data.pendingSellers > 0 && { to: '/admin/sellers?status=PENDING', text: `${data.pendingSellers} seller application(s)` },
-    data.pendingProducts > 0 && { to: '/admin/products', text: `${data.pendingProducts} product(s) awaiting approval` },
+    data.pendingProducts > 0 && { to: '/admin/products?approval=PENDING', text: `${data.pendingProducts} product(s) awaiting approval` },
     data.openReturns > 0 && { to: '/admin/returns', text: `${data.openReturns} open return request(s)` },
     data.unreadMessages > 0 && { to: '/admin/messages', text: `${data.unreadMessages} unresolved message(s)` },
   ].filter(Boolean)
@@ -85,7 +85,7 @@ export default function AdminDashboard() {
           <StatCard to="/admin/sellers" label="Sellers" value={data.totalSellers} icon="bi-shop" foot={`${data.pendingSellers} pending approval`} />
         </div>
         <div className="col-6 col-xl-3">
-          <StatCard to="/admin/products?approval=ALL" label="Products" value={data.totalProducts} icon="bi-box-seam" foot={`${data.activeProducts} active · ${data.lowStockProducts} low stock`} />
+          <StatCard to="/admin/products" label="Products" value={data.totalProducts} icon="bi-box-seam" foot={`${data.activeProducts} active · ${data.lowStockProducts} low stock`} />
         </div>
         <div className="col-6 col-xl-3">
           <StatCard to="/admin/categories" label="Categories" value={data.totalCategories} icon="bi-tags" foot={`${data.activeCategories} active`} />

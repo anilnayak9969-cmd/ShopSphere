@@ -35,21 +35,26 @@ public final class ProductSpecifications {
             BigDecimal minRating,
             Integer minDiscount,
             ApprovalStatus approvalStatus,
-            Integer maxStock) {
+            Integer maxStock,
+            Boolean active) {
 
         public static Filter publicCatalog(String search, Collection<Integer> categoryIds, Collection<String> brands,
                                            BigDecimal minPrice, BigDecimal maxPrice, Boolean inStock,
                                            BigDecimal minRating, Integer minDiscount) {
             return new Filter(true, null, search, categoryIds, brands, minPrice, maxPrice, inStock, minRating,
-                    minDiscount, null, null);
+                    minDiscount, null, null, null);
         }
 
         public static Filter forSeller(Long sellerId, String search, ApprovalStatus status, Integer maxStock) {
-            return new Filter(false, sellerId, search, null, null, null, null, null, null, null, status, maxStock);
+            return new Filter(false, sellerId, search, null, null, null, null, null, null, null, status, maxStock,
+                    null);
         }
 
-        public static Filter forAdmin(String search, Collection<Integer> categoryIds, ApprovalStatus status) {
-            return new Filter(false, null, search, categoryIds, null, null, null, null, null, null, status, null);
+        /** active = true/false limits the Product dashboard to active or inactive (soft-deleted) products. */
+        public static Filter forAdmin(String search, Collection<Integer> categoryIds, ApprovalStatus status,
+                                      Boolean active) {
+            return new Filter(false, null, search, categoryIds, null, null, null, null, null, null, status, null,
+                    active);
         }
     }
 
@@ -102,6 +107,9 @@ public final class ProductSpecifications {
             }
             if (f.maxStock() != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("stockQuantity"), f.maxStock()));
+            }
+            if (f.active() != null) {
+                predicates.add(cb.equal(root.get("active"), f.active()));
             }
             return cb.and(predicates.toArray(Predicate[]::new));
         };

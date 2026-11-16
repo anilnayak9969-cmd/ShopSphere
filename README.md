@@ -23,6 +23,14 @@ Built exactly against the given `categories` table (`category_id`, `category_nam
 4. **Delete / deactivate**: a **soft delete** through `status`. If active products remain, the admin is **warned to assign them to another category first** and can move them in one click. The backend enforces the same rule (HTTP 409).
 5. **Subcategories**: a category can have a parent (e.g. *Electronics → Audio*). Cycles are rejected, and browsing a department also shows products from its subcategories. Category images can be uploaded.
 
+### Module 2 — Product Management (assignment module)
+Built against the given `products` table (`product_id`, `product_name`, `description`, `price`, `SKU`, `category_id`, `inventory_count` → `stock_quantity`, `created_at`, `updated_at`, `status` → `active`). Full guide, screenshots and the submission PDF: [`Docs/ProductManagement`](Docs/ProductManagement/README.md).
+
+1. **Add a new product** (admins only): **Admin → Products → New product**, with name, description, price, category, SKU and inventory count, plus optional discount, brand and photo. The admin picks the approved store that sells it. Admin-added products are approved and live straight away.
+2. **Product dashboard**: summary cards (total, active, inactive, low stock), and every product with price, stock (low stock in red), category, store and Active/Inactive status. Search by name, brand, SKU or category, filter by category, status and approval, with pagination. **New product**, **Edit** and **Deactivate/Activate** on the page.
+3. **Update product details**: edit price, discount, description, inventory count, category, SKU, brand and photo. The seller is notified.
+4. **Delete / deactivate**: a **soft delete** through the Boolean `active` column, after a **warning that the product will be hidden from the customer interface**. The row is kept for order history and can be reactivated (only while its category is active).
+
 ### Accounts & security
 - **Separate full-screen Login and Register pages**, with no store header, an image panel that changes with the chosen role and links between the two.
 - **Register by role**. Every role starts with name, email, 10-digit mobile, a strong password and acceptance of the terms, then adds its own details:
@@ -85,7 +93,7 @@ Profile, Orders (with tracking and returns), **Returns & refunds**, **Payment hi
 - **Inventory** (low-stock and out-of-stock filters, inline stock editing), **Orders** (fulfilment actions and the ship dialog), **Returns**, **Sales reports** (daily chart, top products, status counts), **Commission & earnings** (monthly statement) and **Store profile** (logo, support contacts, GSTIN, business address).
 
 ### Admin console
-Overview (with the seller-application queue and "needs attention" links), **Users** (suspend or reactivate any account), **Sellers** (approve, reject or suspend stores), **Categories** (parent category, image upload), **Products** (an approval queue with approve or reject-with-reason, plus take-downs), **Orders** (item statuses and tracking), **Payments & refunds**, **Returns**, **Coupons**, **Reviews**, **Reports** (orders per day, top categories and sellers, status breakdown, low stock, refunds, estimated commission), **Messages** and **Settings** (commission, shipping fee, free-shipping threshold, COD, return window, low-stock threshold).
+Overview (with the seller-application queue and "needs attention" links), **Users** (suspend or reactivate any account), **Sellers** (approve, reject or suspend stores), **Categories** (parent category, image upload), **Products** (Product Management: add, edit, deactivate/activate, stock and status overview, plus the approval queue with approve or reject-with-reason), **Orders** (item statuses and tracking), **Payments & refunds**, **Returns**, **Coupons**, **Reviews**, **Reports** (orders per day, top categories and sellers, status breakdown, low stock, refunds, estimated commission), **Messages** and **Settings** (commission, shipping fee, free-shipping threshold, COD, return window, low-stock threshold).
 
 ### Starter catalogue and demo accounts
 With `app.seed.demo-data=true`, the backend loads `src/main/resources/seed/catalog.json` on start. It is a realistic marketplace:
@@ -171,7 +179,9 @@ My_Project_2/
 └── DataBase/
     ├── Internship_Ecommerce.sql        Creates the database, all 23 tables, platform settings and the coupon
     ├── catalog_data.sql                Stores, category tree, 77 products, photos, specifications, demo accounts
-    └── queries.sql                     Category Management SQL + reports, approval queue, fulfilment, returns, commission
+    └── queries.sql                     Category and Product Management SQL + reports, approval queue, fulfilment, returns, commission
+Docs/
+└── ProductManagement/                  Product Management README, submission PDF (+ HTML source) and screenshots
 ```
 
 ---
@@ -186,7 +196,7 @@ In MySQL Workbench open `DataBase/Internship_Ecommerce.sql` and execute it, or r
 ```bash
 mysql -u root -p < DataBase/Internship_Ecommerce.sql
 ```
-This creates `ecommerce_intern`, all 23 tables, the platform settings row and the `WELCOME10` coupon. Then load the catalogue with `mysql -u root -p ecommerce_intern < DataBase/catalog_data.sql`, or just start the backend, which loads the same catalogue itself. It is safe to run more than once. The backend also creates and updates tables automatically, so this step is optional. `DataBase/queries.sql` contains ready-to-run queries for the Category Management module and for reports.
+This creates `ecommerce_intern`, all 23 tables, the platform settings row and the `WELCOME10` coupon. Then load the catalogue with `mysql -u root -p ecommerce_intern < DataBase/catalog_data.sql`, or just start the backend, which loads the same catalogue itself. It is safe to run more than once. The backend also creates and updates tables automatically, so this step is optional. `DataBase/queries.sql` contains ready-to-run queries for the Category Management module (section 1), the Product Management module (section 7) and reports.
 
 ### 2. Backend secrets
 Copy `Backend/ecommerce/src/main/resources/application-secrets.example.properties` to `application-secrets.properties` in the same folder and fill it in. This file is git-ignored.
@@ -287,7 +297,8 @@ All endpoints are prefixed with `/api`. Protected endpoints need the header `Aut
 |------|-----------|
 | Category Management | `GET/POST /admin/categories`, `GET/PUT/DELETE /admin/categories/{id}`, `PATCH /admin/categories/{id}/status`, `POST /admin/categories/{id}/reassign-products` |
 | Dashboard & people | `GET /admin/dashboard`, `GET /admin/users?role=`, `POST /admin/admins` (create an admin), `PATCH /admin/sellers/{id}/status`, `PATCH /admin/users/{id}/status`, `GET /admin/delivery-partners?status=&search=`, `PATCH /admin/delivery-partners/{id}/status` |
-| Products & orders | `GET /admin/products?approval=`, `PATCH /admin/products/{id}/status`, `PATCH /admin/products/{id}/approve`, `PATCH /admin/products/{id}/reject`, `GET /admin/orders`, `GET /admin/orders/{id}`, `PATCH /admin/orders/{id}/status` |
+| Product Management | `GET /admin/products?search=&categoryId=&approval=&active=`, `GET /admin/products/summary`, `GET /admin/products/{id}`, `POST /admin/products` (`{ sellerId, product }`), `PUT /admin/products/{id}`, `PATCH /admin/products/{id}/status` (deactivate/activate), `PATCH /admin/products/{id}/approve`, `PATCH /admin/products/{id}/reject`, `PATCH /admin/products/{id}/category` |
+| Orders | `GET /admin/orders`, `GET /admin/orders/{id}`, `PATCH /admin/orders/{id}/status` |
 | Payments & returns | `GET /admin/payments?status=&refundedOnly=`, `GET /admin/returns?status=`, `PATCH /admin/returns/{id}` |
 | Reports, settings, inbox | `GET /admin/reports?days=`, `GET/PUT /admin/settings`, `GET /admin/messages?resolved=`, `PATCH /admin/messages/{id}` |
 | Coupons | `GET/POST /admin/coupons`, `PUT /admin/coupons/{id}`, `PATCH /admin/coupons/{id}/status` |
@@ -304,7 +315,7 @@ All endpoints are prefixed with `/api`. Protected endpoints need the header `Aut
 | `seller_profiles` | One per seller: business type, GSTIN, pickup/business address, description, logo, support contacts |
 | `delivery_partner_profiles` | One per delivery partner: vehicle type, registration number, service city and PIN |
 | `categories` | Assignment table; soft delete via `status`; optional `parent_category_id` for subcategories |
-| `products` | Belongs to a category and a seller. Price, discount, selling price, stock, `approval_status`, `rejection_reason`, `sold_count`, rating |
+| `products` | Product Management table. Belongs to a category and a seller. Price, discount, selling price, stock (`stock_quantity` = inventory count), soft delete via `active`, `approval_status`, `rejection_reason`, `sold_count`, rating |
 | `product_images` / `product_specifications` | Gallery photos and specification rows (many per product) |
 | `carts` / `cart_items` | One cart per customer; `price_at_add` for price-change notices; saved-for-later flag |
 | `wishlist_items` | Saved products; `(user_id, product_id)` unique |
@@ -328,7 +339,7 @@ Money uses `DECIMAL(12,2)`. Products and categories are never hard-deleted, so o
 ```bash
 cd Backend/ecommerce && ./mvnw test
 ```
-There are **54 tests**: role-based registration (customer, seller, delivery partner and admin access-code rules, vehicle-number formats), Category Management rules (including subcategory cycles), OTP security, Razorpay checkout and webhook signatures, idempotent payment verification, the sold-out refund path, coupon rules (caps, minimum order, expiry, usage limits, one use per customer), verified-purchase reviews, pricing, shipping and commission rules, COD checkout, and item-level order status derivation. The `contextLoads` test needs MySQL running.
+There are **63 tests**: role-based registration (customer, seller, delivery partner and admin access-code rules, vehicle-number formats), Category Management rules (including subcategory cycles), Product Management rules (admin add is approved and live, unapproved stores and duplicate SKUs refused, updates keep approval, inactive categories refused, deactivation is a soft delete), OTP security, Razorpay checkout and webhook signatures, idempotent payment verification, the sold-out refund path, coupon rules (caps, minimum order, expiry, usage limits, one use per customer), verified-purchase reviews, pricing, shipping and commission rules, COD checkout, and item-level order status derivation. The `contextLoads` test needs MySQL running.
 
 Frontend: `npm run lint` and `npm run build`.
 

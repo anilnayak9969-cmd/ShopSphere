@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ShopSphere — Product Management Module</title>
+<style>
+  @page { size: A4; margin: 18mm 17mm 20mm 17mm; }
+  :root { --navy: #14213d; --blue: #2563eb; --ink: #1f2937; --muted: #6b7280; --line: #cfd6e0; --head: #eef1f5; --warn: #fff7e6; --warn-line: #f59e0b; --ok: #e8f6ee; --ok-ink: #137a3e; }
+  * { box-sizing: border-box; }
+  body { font-family: Calibri, "Segoe UI", Arial, sans-serif; color: var(--ink); font-size: 10.6pt; line-height: 1.42; margin: 0; }
+  h1 { font-size: 23pt; color: var(--navy); margin: 0 0 2pt; letter-spacing: -0.2pt; }
+  .subtitle { font-size: 14pt; color: var(--muted); margin: 0 0 4pt; }
+  .byline { color: var(--muted); margin-bottom: 14pt; }
+  h2 { font-size: 15.5pt; color: var(--navy); margin: 18pt 0 6pt; page-break-after: avoid; }
+  h3 { font-size: 12.3pt; color: var(--blue); margin: 14pt 0 5pt; page-break-after: avoid; }
+  p { margin: 0 0 7pt; }
+  ul, ol { margin: 0 0 8pt; padding-left: 20pt; }
+  li { margin-bottom: 2.5pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 10pt; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  th, td { border: 1px solid var(--line); padding: 5pt 7pt; text-align: left; vertical-align: top; }
+  th { background: var(--head); font-weight: 700; }
+  code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 9.2pt; }
+  pre { background: #f2f4f7; padding: 7pt 9pt; font-family: Consolas, monospace; font-size: 8.6pt; line-height: 1.35; white-space: pre-wrap; margin: 4pt 0 10pt; }
+  pre .c { color: #6b7280; }
+  .note { background: var(--warn); border-left: 4pt solid var(--warn-line); padding: 6pt 9pt; margin: 6pt 0 10pt; }
+  .done { background: var(--ok); color: var(--ok-ink); font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; white-space: nowrap; font-size: 9.5pt; }
+  figure { margin: 8pt 0 12pt; text-align: center; page-break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid var(--line); }
+  figure.half img { width: 82%; }
+  figcaption { font-style: italic; color: #4b5563; font-size: 9.6pt; margin-top: 4pt; }
+  .page-break { page-break-before: always; }
+  .small { font-size: 9.5pt; color: var(--muted); }
+  a { color: var(--blue); }
+</style>
+</head>
+<body>
+
+<h1>ShopSphere — Product Management Module</h1>
+<div class="subtitle">Assignment submission and end user documentation</div>
+<div class="byline">Anil Nayak · 16 November 2026</div>
+
+<h2>Submission details</h2>
+<p>This document submits the Product Management module of ShopSphere, a multi-vendor e-commerce website, with its code repository, hosted link, requirement checklist and user guide.</p>
+<table>
+  <tr><th style="width:32%">Item</th><th>Details</th></tr>
+  <tr><td>Candidate</td><td>Anil Nayak</td></tr>
+  <tr><td>Internship</td><td>ITVedant / Vibgyor Advisors integrated internship</td></tr>
+  <tr><td>Project</td><td>ShopSphere — multi-vendor e-commerce platform</td></tr>
+  <tr><td>Module</td><td>Product Management (Admin console)</td></tr>
+  <tr><td>Frontend</td><td>React 19, Vite, React Router, Bootstrap 5</td></tr>
+  <tr><td>Backend</td><td>Java 17, Spring Boot 4, Spring Security (JWT), Spring Data JPA</td></tr>
+  <tr><td>Database</td><td>MySQL (database <code>ecommerce_intern</code>, table <code>products</code>)</td></tr>
+</table>
+
+<h2>1. GitHub repository link</h2>
+<p><b>Repository:</b> <a href="https://github.com/anilnayak9969-cmd/ShopSphere">https://github.com/anilnayak9969-cmd/ShopSphere</a></p>
+<p>The repository holds the complete project. Secret settings (database password, JWT secret, email and Razorpay keys, admin access code) are not committed; an example settings file shows what to fill in.</p>
+<table>
+  <tr><th style="width:32%">Folder</th><th>Contents</th></tr>
+  <tr><td><code>Backend/ecommerce</code></td><td>Spring Boot API. The module's code is the product endpoints in <code>AdminController</code>, <code>ProductServiceImpl</code> (admin add, update, deactivate, summary), the <code>Product</code> entity, <code>AdminProductRequest</code>, <code>ProductRequest</code>, <code>ProductSummaryResponse</code> and <code>ProductSpecifications</code> (dashboard filters). Tests: <code>ProductServiceImplAdminTest</code>.</td></tr>
+  <tr><td><code>Frontend/ecommerce</code></td><td>React website. The module's admin screens are <code>src/pages/admin/AdminProducts.jsx</code> (product dashboard) and <code>src/pages/admin/AdminProductForm.jsx</code> (add and edit). API calls are in <code>src/services/adminService.js</code>.</td></tr>
+  <tr><td><code>DataBase</code></td><td><code>catalog_data.sql</code> (sample stores, categories and products) and <code>queries.sql</code> (section 7: Product Management SQL)</td></tr>
+  <tr><td><code>Docs/ProductManagement</code></td><td>This document, its screenshots and the module README</td></tr>
+  <tr><td><code>README.md</code></td><td>Setup steps, features and API reference</td></tr>
+</table>
+
+<h2>2. URL of the module hosted on a free server</h2>
+<p><b>Website:</b> <a href="https://host-shop-sphere.vercel.app/">https://host-shop-sphere.vercel.app/</a></p>
+<p>To try the module, sign in with the admin account below and open <b>Admin console → Products</b>.</p>
+<table>
+  <tr><th style="width:50%">Login</th><th>Value</th></tr>
+  <tr><td>Admin email</td><td>admin@shopsphere.com</td></tr>
+  <tr><td>Admin password</td><td><i>(shared separately with the evaluator)</i></td></tr>
+</table>
+<div class="note"><b>Hosting status:</b> only the React frontend is deployed on Vercel. The Spring Boot backend and the MySQL database are not online yet, so the hosted site cannot sign in or load products. The new Product Management screens appear on the hosted site after the latest code is pushed and redeployed. All screenshots in this document were taken from the complete application running locally with its backend and database.</div>
+
+<h2>3. Requirement checklist — is the module implemented?</h2>
+<p>Every functionality in the assignment is implemented and was tested in the running application. The table maps each requirement to where it lives in ShopSphere.</p>
+<table>
+  <tr><th style="width:27%">Requirement</th><th>How ShopSphere implements it</th><th style="width:14%">Status</th></tr>
+  <tr><td><b>1. Add a new product</b><br>Only admins; fields name, description, price, category, SKU, inventory count</td><td><b>New product</b> button → <b>Add a new product</b> form with Product name, Description, Price, Category, SKU and Inventory count (plus optional discount, brand and photo). <code>POST /api/admin/products</code> is protected by the ADMIN role, so customers and sellers get HTTP 403. Admin-added products are approved and live straight away.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>2. Product dashboard</b><br>View all products; create, update, delete options; stock, price and status</td><td><b>Product management</b> page: summary cards (total, active, inactive, low stock), every product with SKU, store, category, price, stock (low stock in red), Active/Inactive status and last update. Search, category filter, All/Active/Inactive filter and pagination. Each row has <b>Edit</b> and <b>Deactivate</b>/<b>Activate</b>; <b>New product</b> sits at the top.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>3. Update product details</b><br>Price, description, inventory count, category</td><td><b>Edit</b> opens the same form filled with the current values. <code>PUT /api/admin/products/{id}</code> saves price, discount, description, inventory count, category, name, SKU, brand and photo. The seller is notified.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>4. Delete / deactivate product</b><br>Soft delete with a Boolean status; warning before deactivating</td><td><b>Deactivate</b> sets the Boolean <code>active</code> column to 0 (soft delete); the row is never removed. A warning window first says that deactivating <i>hides the product from the customer interface</i>. <b>Activate</b> brings it back.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>Database design</b><br>Table <code>products</code></td><td>Every assignment column exists in the <code>products</code> table (two have ShopSphere names: <code>inventory_count</code> → <code>stock_quantity</code>, <code>status</code> → <code>active</code>). See the Appendix.</td><td><span class="done">Implemented</span></td></tr>
+</table>
+
+<h2>4. End user documentation — Product Management</h2>
+<p>Product Management lets the ShopSphere administrator keep the store's catalogue up to date: add products, change prices, descriptions, stock and categories, and take products off sale without losing their history.</p>
+<p>With this module the admin can:</p>
+<ul>
+  <li>see every product with its price, stock level, category, store and status (active or inactive)</li>
+  <li>see at a glance how many products are active, inactive or low on stock</li>
+  <li>search by product name, brand, SKU or category, and filter by category and by status</li>
+  <li>add a new product with its name, description, price, category, SKU and inventory count</li>
+  <li>edit a product's price, description, inventory count, category and other details</li>
+  <li>deactivate a product (a soft delete), after a warning that it will be hidden from customers</li>
+  <li>reactivate a product at any time</li>
+  <li>approve or reject products that sellers list themselves (the approval queue)</li>
+</ul>
+<p><b>Who uses it:</b> only users with the <b>Admin</b> role. Customers see a product once it is active and approved and its category is active. Sellers manage only their own products from the Seller studio.</p>
+
+<h3>4.1 Sign in and open Product Management</h3>
+<ol>
+  <li>Open the website and click <b>Login</b> in the top-right corner.</li>
+  <li>Choose the <b>Admin</b> tab, enter the admin email and password, and click <b>Sign in as admin</b>.
+    <ol type="a"><li>On a local or demo setup, the <b>Try a demo account → Admin</b> button signs in with one click.</li></ol></li>
+  <li>You land on the <b>Admin console</b> overview. The <b>Products</b> card shows the total, active and low-stock counts.</li>
+  <li>In the left menu, click <b>Products</b>. The <b>Product management</b> page opens.</li>
+</ol>
+<figure><img src="screenshots/01-login-admin.png"><figcaption>Figure 1 — The login page with the Admin tab selected.</figcaption></figure>
+<figure><img src="screenshots/02-admin-overview.png"><figcaption>Figure 2 — The Admin console overview. Products is in the left menu.</figcaption></figure>
+
+<h3>4.2 The product dashboard</h3>
+<p>The page opens with four summary cards and the list of all products, newest first.</p>
+<table>
+  <tr><th style="width:33%">Part of the page</th><th>What it shows</th></tr>
+  <tr><td><b>New product</b> button</td><td>Opens the Add a new product form (section 4.3)</td></tr>
+  <tr><td><b>Total products</b> card</td><td>Number of products, active and inactive</td></tr>
+  <tr><td><b>Active</b> card</td><td>Products switched on for the store</td></tr>
+  <tr><td><b>Inactive</b> card</td><td>Products that were deactivated (soft deleted, kept for history)</td></tr>
+  <tr><td><b>Low stock</b> card</td><td>Active products with 5 units or fewer (the threshold is set in Admin → Settings), and how many seller products await approval</td></tr>
+  <tr><td><b>All products / Approval queue / Approved / Rejected</b></td><td>Filter by approval. The approval queue lists products that sellers submitted (section 4.8)</td></tr>
+  <tr><td><b>All / Active / Inactive</b> buttons</td><td>Show only products with that status</td></tr>
+  <tr><td>Search box and category list</td><td>Search by name, brand, SKU or category; pick a category (its subcategories are included)</td></tr>
+  <tr><td>Table: <b>Product</b></td><td>Photo, name, SKU and the store that sells it. Live products link to their shop page</td></tr>
+  <tr><td>Table: <b>Category</b></td><td>The product's category; "category inactive" in red if that category was deactivated</td></tr>
+  <tr><td>Table: <b>Price</b></td><td>Price customers pay, with the MRP underneath when there is a discount</td></tr>
+  <tr><td>Table: <b>Stock</b></td><td>Inventory count; shown in red with "low stock" or "out of stock" when it runs low</td></tr>
+  <tr><td>Table: <b>Status</b></td><td><b>Active</b> or <b>Inactive</b> badge (plus "Awaiting review" or "Rejected" for seller listings)</td></tr>
+  <tr><td>Table: <b>Last updated</b></td><td>Date of the last change</td></tr>
+  <tr><td><b>Edit</b> / <b>Deactivate</b> / <b>Activate</b></td><td>Actions for each product (sections 4.4, 4.5 and 4.6)</td></tr>
+</table>
+<p>The list shows 10 products per page; use the page numbers under the table to move between pages.</p>
+<figure><img src="screenshots/03-product-dashboard.png"><figcaption>Figure 3 — The Product management dashboard: summary cards, filters, search and the product list with price, stock and status.</figcaption></figure>
+
+<h3>4.3 Add a new product</h3>
+<ol>
+  <li>Click <b>New product</b> at the top right of the dashboard.</li>
+  <li>Fill in the form (see the table below). The <b>Customer preview</b> on the right shows the product card as shoppers will see it.</li>
+  <li>Click <b>Add product</b>.</li>
+  <li>A green message confirms: <i>Product "…" added and live in the store.</i> The product appears at the top of the dashboard, and the store's seller gets a notification.</li>
+</ol>
+<table>
+  <tr><th style="width:21%">Field</th><th style="width:11%">Required</th><th>What to enter</th></tr>
+  <tr><td>Sold by (store)</td><td>Yes</td><td>The approved store that packs and ships the product, e.g. <i>UrbanNest Home</i></td></tr>
+  <tr><td>Product name</td><td>Yes</td><td>2–150 characters, e.g. <i>Nordic Dome Pendant Light (White)</i></td></tr>
+  <tr><td>Description</td><td>Yes</td><td>10–2000 characters. Customers read it on the product page</td></tr>
+  <tr><td>Category</td><td>Yes</td><td>An active category or subcategory, e.g. <i>Home Décor</i></td></tr>
+  <tr><td>SKU</td><td>Yes</td><td>Unique stock code, 3–60 letters, numbers, - or _, e.g. <i>URBN-PEND-001</i>. Saved in capitals</td></tr>
+  <tr><td>Price / MRP (₹)</td><td>Yes</td><td>At least ₹1, up to 2 decimal places</td></tr>
+  <tr><td>Discount (%)</td><td>No</td><td>0–90. The price customers pay is worked out automatically</td></tr>
+  <tr><td>Inventory count</td><td>Yes</td><td>Units in stock, a whole number from 0 to 100000</td></tr>
+  <tr><td>Brand</td><td>No</td><td>Up to 80 characters</td></tr>
+  <tr><td>Main photo</td><td>No</td><td>Click <b>Upload</b> to choose a JPG, PNG or WEBP image up to 5 MB, or paste an image link starting with https://</td></tr>
+</table>
+<figure><img src="screenshots/05-add-product-form.png"><figcaption>Figure 4 — Adding "Nordic Dome Pendant Light (White)" to UrbanNest Home in Home Décor, with price, discount, SKU and inventory count.</figcaption></figure>
+<figure><img src="screenshots/04-add-product-validation.png"><figcaption>Figure 5 — Clicking Add product on an empty form: each required field explains what is missing.</figcaption></figure>
+<figure><img src="screenshots/06-product-added.png"><figcaption>Figure 6 — The new product at the top of the dashboard: Active, Home Décor, ₹2,199.12 (MRP ₹2,499) and 25 in stock. Total products went from 77 to 78.</figcaption></figure>
+
+<h3>4.4 Update product details</h3>
+<ol>
+  <li>Find the product (use the search box if needed) and click <b>Edit</b> in its row.</li>
+  <li>The <b>Edit product</b> form opens with the current values, the store name and the last update time.</li>
+  <li>Change the price, discount, description, inventory count, category or any other field.</li>
+  <li>Click <b>Save changes</b>. A message confirms: <i>Product "…" updated.</i> The seller is notified.</li>
+</ol>
+<p>Changes made by an admin go live straight away; they do not send the product back for approval. The product's gallery photos and specifications, which the seller manages, are kept as they are.</p>
+<figure><img src="screenshots/07-edit-product.png"><figcaption>Figure 7 — Editing the product: the price is changed to ₹2,299 and the inventory count to 4.</figcaption></figure>
+<figure><img src="screenshots/08-product-updated.png"><figcaption>Figure 8 — After saving: the new price ₹2,023.12 (MRP ₹2,299) and stock 4, shown in red as low stock.</figcaption></figure>
+
+<h3>4.5 Deactivate (delete) a product</h3>
+<p>Deactivating is a <b>soft delete</b>: the product's Boolean status column (<code>active</code>) is set to false. The product disappears from the customer interface, but its record stays in the database, so past orders, reviews and reports keep it, and it can be brought back later.</p>
+<ol>
+  <li>Click <b>Deactivate</b> in the product's row.</li>
+  <li>A warning window opens: <i>deactivating this product will hide it from the customer interface. Customers can no longer find or buy it.</i></li>
+  <li>Click <b>Deactivate</b> to confirm, or <b>Cancel</b> to keep it on sale.</li>
+  <li>A message confirms: <i>"…" has been deactivated.</i> The status changes to <b>Inactive</b>, and the Active and Inactive cards update.</li>
+</ol>
+<figure><img src="screenshots/09-deactivate-warning.png"><figcaption>Figure 9 — The warning shown before deactivating: the product will be hidden from customers, and the row is kept (soft delete).</figcaption></figure>
+<figure><img src="screenshots/10-inactive-products.png"><figcaption>Figure 10 — The Inactive filter after deactivating: the product shows an Inactive badge and an Activate button; the Inactive card now shows 1.</figcaption></figure>
+<figure><img src="screenshots/11-customer-view-inactive.png"><figcaption>Figure 11 — What a customer sees when opening an inactive product's link: "This product is not available". It is also gone from search, categories and the home page.</figcaption></figure>
+
+<h3>4.6 Reactivate a product</h3>
+<ol>
+  <li>Click <b>Inactive</b> above the table to list deactivated products.</li>
+  <li>Click <b>Activate</b> in the product's row, then <b>Activate</b> in the window.</li>
+  <li>A message confirms: <i>"…" is active again.</i> Customers can buy it again straight away.</li>
+</ol>
+<p>A product can be reactivated only while its category is active. If the category was deactivated, edit the product and choose an active category first.</p>
+<figure><img src="screenshots/12-activate-dialog.png"><figcaption>Figure 12 — Reactivating the product.</figcaption></figure>
+
+<h3>4.7 What customers see</h3>
+<ul>
+  <li><b>Active products</b> that are approved, in an active category and sold by an approved store appear in search, category pages, the home page and their own product page.</li>
+  <li><b>Inactive products</b> are never shown. An old link opens "This product is not available" (Figure 11), and the product cannot be added to the cart or bought.</li>
+  <li><b>Price and stock changes</b> show immediately; when stock is low the product page says "Only N left".</li>
+</ul>
+<figure><img src="screenshots/14-customer-product-page.png"><figcaption>Figure 13 — The product page after reactivation, with the updated price, discount, "Only 4 left" stock message, store and description.</figcaption></figure>
+
+<h3>4.8 Products listed by sellers (approval queue)</h3>
+<p>Sellers can also list products for their own store from the Seller studio. Those listings wait in <b>Approval queue</b> until an admin reviews them: click <b>Review</b>, check the listing, then <b>Approve</b> (it goes live) or <b>Reject…</b> with a reason that the seller sees. Products added by an admin skip this step.</p>
+
+<h3>4.9 Rules and messages</h3>
+<table>
+  <tr><th style="width:33%">Situation</th><th style="width:37%">Message shown</th><th>What to do</th></tr>
+  <tr><td>A required field is empty or too short</td><td>e.g. <i>Product name must be 2-150 characters</i>, <i>Choose a category</i>, <i>Price must be at least ₹1</i></td><td>Fill in the field shown in red (Figure 5)</td></tr>
+  <tr><td>No store chosen</td><td><i>Choose the store that sells this product</i></td><td>Pick an approved store</td></tr>
+  <tr><td>SKU already used by another product</td><td><i>SKU … is already in use.</i></td><td>Enter a different SKU (Figure 14)</td></tr>
+  <tr><td>SKU with spaces or symbols</td><td><i>SKU must be 3-60 letters, numbers, - or _</i></td><td>Use letters, numbers, - or _ only</td></tr>
+  <tr><td>Inventory count negative, decimal or over 100000</td><td><i>Enter a whole number from 0 to 100000</i></td><td>Correct the number</td></tr>
+  <tr><td>Discount above 90%</td><td><i>Discount must be 0-90%</i></td><td>Lower the discount</td></tr>
+  <tr><td>Image is not JPG, PNG or WEBP, or larger than 5 MB</td><td><i>Choose a JPG, PNG or WEBP image.</i> / <i>Images must be 5 MB or smaller.</i></td><td>Pick a smaller or different image</td></tr>
+  <tr><td>Moving a product into an inactive category</td><td><i>The selected category is inactive.</i></td><td>Choose an active category</td></tr>
+  <tr><td>Adding a product to a store that is not approved</td><td><i>Products can only be added to an approved, active store.</i></td><td>Approve the store first (Admin → Sellers)</td></tr>
+  <tr><td>Activating a product whose category is inactive</td><td><i>This product's category is inactive. Edit the product and choose an active category first.</i></td><td>Edit the product's category, then activate</td></tr>
+  <tr><td>A customer or seller calls an admin product API</td><td>HTTP 403 — <i>You do not have permission to access this resource</i></td><td>Only admins can manage products here</td></tr>
+</table>
+<figure><img src="screenshots/05c-duplicate-sku.png"><figcaption>Figure 14 — Trying to add a second product with SKU URBN-PEND-001: the SKU must be unique.</figcaption></figure>
+
+<h3>4.10 Frequently asked questions</h3>
+<p><b>Why can't I delete a product permanently?</b> Orders, invoices, reviews and reports point to it. Deactivating hides it from customers while keeping that history correct.</p>
+<p><b>I deactivated a product by mistake.</b> Click <b>Inactive</b>, then <b>Activate</b> in its row. Nothing was lost.</p>
+<p><b>Why does a product added by the admin not need approval?</b> The admin is the person who approves products, so it goes live at once. Seller listings still go through the approval queue.</p>
+<p><b>Why must I choose a store?</b> ShopSphere is a multi-vendor marketplace: every product is packed and shipped by a store, which receives the orders.</p>
+<p><b>The stock number is red.</b> The product has 5 units or fewer (or none). Update the inventory count when new stock arrives.</p>
+<p><b>The page says "Something went wrong" or keeps loading.</b> The backend server may be starting. Wait a minute and click <b>Try again</b>.</p>
+<p><b>I was signed out.</b> The sign-in lasts one day. Sign in again with the admin account.</p>
+
+<h2>5. Screenshots of the running application</h2>
+<p>Figures 1–14 above were taken from the complete application running locally: the React frontend on <code>http://localhost:5173</code>, the Spring Boot backend on <code>http://localhost:8080</code> and the MySQL database <code>ecommerce_intern</code>. Each figure follows one product, <i>Nordic Dome Pendant Light (White)</i>, through the module: it is added (Figures 4–6), updated (Figures 7–8), deactivated with a warning (Figures 9–11), reactivated (Figure 12) and shown to customers (Figure 13).</p>
+<figure><img src="screenshots/13-product-reactivated.png"><figcaption>Figure 15 — After reactivation the Inactive list is empty, the Active card is back to 78 and the Inactive card to 0, and the success message confirms it.</figcaption></figure>
+
+<h2 class="page-break">Appendix A: database table</h2>
+<p>The module stores its data in the MySQL table <code>products</code>. Products link to the category through <code>products.category_id</code> and to the store through <code>products.seller_id</code>.</p>
+<table>
+  <tr><th style="width:22%">Assignment column</th><th style="width:22%">Assignment type</th><th style="width:24%">ShopSphere column and type</th><th>Meaning</th></tr>
+  <tr><td>product_id</td><td>int (pk, auto_increment)</td><td><code>product_id</code> BIGINT, primary key, auto increment</td><td>Unique identifier for each product</td></tr>
+  <tr><td>product_name</td><td>varchar(150)</td><td><code>product_name</code> VARCHAR(150)</td><td>Name of the product</td></tr>
+  <tr><td>description</td><td>varchar(500)</td><td><code>description</code> VARCHAR(2000)</td><td>Detailed description (longer limit so full product details fit)</td></tr>
+  <tr><td>price</td><td>decimal(10,2)</td><td><code>price</code> DECIMAL(12,2)</td><td>Product price (MRP)</td></tr>
+  <tr><td>SKU</td><td>varchar(50)</td><td><code>sku</code> VARCHAR(60), unique</td><td>Unique stock-keeping identifier</td></tr>
+  <tr><td>category_id</td><td>int (fk)</td><td><code>category_id</code> INT, foreign key → <code>categories</code></td><td>The product's category</td></tr>
+  <tr><td>inventory_count</td><td>int</td><td><code>stock_quantity</code> INT</td><td>Number of items available in stock</td></tr>
+  <tr><td>created_at</td><td>datetime</td><td><code>created_at</code> DATETIME(6)</td><td>When the product was created</td></tr>
+  <tr><td>updated_at</td><td>datetime</td><td><code>updated_at</code> DATETIME(6)</td><td>When the product details were last updated</td></tr>
+  <tr><td>status</td><td>boolean</td><td><code>active</code> BIT(1)</td><td>1 = active, 0 = inactive (soft delete)</td></tr>
+</table>
+<p>Extra columns used by the marketplace: <code>seller_id</code> (the store), <code>brand</code>, <code>discount_percent</code> and <code>selling_price</code> (price after discount), <code>image_url</code>, <code>approval_status</code> and <code>rejection_reason</code> (seller listings), <code>rating_average</code>, <code>rating_count</code> and <code>sold_count</code>.</p>
+
+<h2>Appendix B: SQL behind each action</h2>
+<p>The full, tested set is in <code>DataBase/queries.sql</code>, section 7.</p>
+<pre><span class="c">-- Add a new product (admin-added products are approved straight away)</span>
+INSERT INTO products (product_name, description, sku, brand, price, discount_percent, selling_price,
+                      stock_quantity, active, category_id, seller_id, approval_status,
+                      rating_average, rating_count, sold_count, created_at, updated_at)
+VALUES ('Nordic Dome Pendant Light (White)', 'Matte white metal dome pendant ...', 'URBN-PEND-001',
+        'UrbanNest', 2499.00, 12, 2199.12, 25, b'1', 21, 4, 'APPROVED', 0, 0, 0, NOW(6), NOW(6));
+
+<span class="c">-- Product dashboard: every product with category, store, price, stock and status</span>
+SELECT p.product_id, p.product_name, p.sku, c.category_name, u.store_name, p.price, p.selling_price,
+       p.stock_quantity AS inventory_count, IF(p.active, 'Active', 'Inactive') AS status, p.updated_at
+FROM products p
+JOIN categories c ON c.category_id = p.category_id
+JOIN users u      ON u.user_id     = p.seller_id
+ORDER BY p.created_at DESC
+LIMIT 10 OFFSET 0;
+
+<span class="c">-- Summary cards</span>
+SELECT COUNT(*) AS total, SUM(active = b'1') AS active, SUM(active = b'0') AS inactive,
+       SUM(active = b'1' AND stock_quantity &lt;= 5) AS low_stock
+FROM products;
+
+<span class="c">-- Update product details: price, description, inventory count and category</span>
+UPDATE products
+SET price = 2299.00, discount_percent = 12, selling_price = 2023.12,
+    description = 'Matte white metal dome pendant ...', stock_quantity = 4, category_id = 21,
+    updated_at = NOW(6)
+WHERE product_id = 79;
+
+<span class="c">-- Deactivate (soft delete) and reactivate</span>
+UPDATE products SET active = b'0', updated_at = NOW(6) WHERE product_id = 79;
+UPDATE products SET active = b'1', updated_at = NOW(6) WHERE product_id = 79;</pre>
+<p class="small">The IDs (category 21 = Home Décor, seller 4 = UrbanNest Home, product 79) are the ones in the local database used for the screenshots.</p>
+
+<h2>Appendix C: API endpoints of the module</h2>
+<p>All endpoints are under <code>/api/admin</code> and need an admin's JWT (<code>Authorization: Bearer &lt;token&gt;</code>).</p>
+<table>
+  <tr><th style="width:9%">Method</th><th style="width:35%">Path</th><th>Purpose</th></tr>
+  <tr><td>GET</td><td><code>/admin/products?search=&amp;categoryId=&amp;approval=&amp;active=&amp;page=&amp;size=</code></td><td>Product dashboard list. <code>active=true|false</code> filters by status</td></tr>
+  <tr><td>GET</td><td><code>/admin/products/summary</code></td><td>Total, active, inactive, low-stock and awaiting-approval counts</td></tr>
+  <tr><td>GET</td><td><code>/admin/products/{id}</code></td><td>One product, for the edit form</td></tr>
+  <tr><td>POST</td><td><code>/admin/products</code></td><td>Add a product: <code>{ "sellerId": 4, "product": { productName, description, sku, price, discountPercent, stockQuantity, categoryId, brand, imageUrl } }</code></td></tr>
+  <tr><td>PUT</td><td><code>/admin/products/{id}</code></td><td>Update product details</td></tr>
+  <tr><td>PATCH</td><td><code>/admin/products/{id}/status</code></td><td>Deactivate <code>{"active": false}</code> or reactivate <code>{"active": true}</code></td></tr>
+  <tr><td>PATCH</td><td><code>/admin/products/{id}/approve</code>, <code>/reject</code>, <code>/category</code></td><td>Approval queue and moving a product to another category</td></tr>
+</table>
+<p><b>Tests:</b> <code>ProductServiceImplAdminTest</code> checks that admin-added products are approved and active, that unapproved stores and duplicate SKUs are refused, that updates change price, stock and category without resetting approval, that inactive categories are refused, that deactivation never deletes the row, and that reactivation needs an active category.</p>
+
+</body>
+</html>

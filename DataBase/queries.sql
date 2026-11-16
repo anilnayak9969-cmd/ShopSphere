@@ -395,3 +395,79 @@ ORDER BY day DESC, role;
 -- DELETE FROM email_otps             WHERE email = @email;
 -- DELETE FROM users                  WHERE user_id = @uid;
 -- COMMIT;
+
+-- =====================================================================
+-- 7. PRODUCT MANAGEMENT MODULE (assignment)
+--    Assignment column  ->  ShopSphere column
+--    inventory_count    ->  stock_quantity      status (boolean) -> active BIT(1)
+--    SKU                ->  sku (UNIQUE)        price            -> price DECIMAL(12,2)
+-- =====================================================================
+
+-- 7.1 Add a new product (admin). Admin-added products are approved straight away.
+--     selling_price = price minus discount, stored so the shop can sort and filter on it.
+INSERT INTO products (product_name, description, sku, brand, price, discount_percent, selling_price,
+                      stock_quantity, image_url, active, category_id, seller_id, approval_status,
+                      rating_average, rating_count, sold_count, created_at, updated_at)
+VALUES ('Linen Table Lamp (SQL example)', 'Ceramic table lamp with a natural linen shade for bedside tables.',
+        'SQL-LAMP-001', 'UrbanNest', 1899.00, 10, 1709.10, 30, NULL, b'1',
+        (SELECT category_id FROM categories WHERE category_name = 'Home Décor'),
+        (SELECT user_id FROM users WHERE email = 'urbannest@shopsphere.local'),
+        'APPROVED', 0.00, 0, 0, NOW(6), NOW(6));
+
+-- 7.2 Product dashboard: every product with category, store, price, stock and status
+SELECT p.product_id,
+       p.product_name,
+       p.sku,
+       c.category_name,
+       u.store_name,
+       p.price,
+       p.selling_price,
+       p.stock_quantity                              AS inventory_count,
+       IF(p.active, 'Active', 'Inactive')            AS status,
+       p.approval_status,
+       p.updated_at
+FROM products p
+JOIN categories c ON c.category_id = p.category_id
+JOIN users u      ON u.user_id     = p.seller_id
+ORDER BY p.created_at DESC
+LIMIT 10 OFFSET 0;
+
+-- 7.3 Summary cards: total, active, inactive and low stock (threshold from platform_settings)
+SELECT COUNT(*)                                                         AS total_products,
+       SUM(active = b'1')                                               AS active_products,
+       SUM(active = b'0')                                               AS inactive_products,
+       SUM(active = b'1' AND stock_quantity <= (SELECT low_stock_threshold FROM platform_settings LIMIT 1)) AS low_stock
+FROM products;
+
+-- 7.4 Search by name, brand, SKU or category, and filter by status (the dashboard search box)
+SELECT p.product_id, p.product_name, p.sku, p.stock_quantity, p.active + 0 AS active
+FROM products p
+JOIN categories c ON c.category_id = p.category_id
+WHERE (LOWER(p.product_name) LIKE '%lamp%' OR LOWER(p.sku) LIKE '%lamp%'
+       OR LOWER(p.brand) LIKE '%lamp%' OR LOWER(c.category_name) LIKE '%lamp%')
+  AND p.active = b'1';
+
+-- 7.5 Update product details: price, description, inventory count and category
+UPDATE products
+SET price            = 1799.00,
+    discount_percent = 10,
+    selling_price    = 1619.10,
+    description      = 'Ceramic table lamp with a natural linen shade. Takes one E27 bulb.',
+    stock_quantity   = 12,
+    category_id      = (SELECT category_id FROM (SELECT category_id FROM categories WHERE category_name = 'Home Décor') AS c),
+    updated_at       = NOW(6)
+WHERE sku = 'SQL-LAMP-001';
+
+-- 7.6 Deactivate (soft delete): the row stays, customers no longer see the product
+UPDATE products SET active = b'0', updated_at = NOW(6) WHERE sku = 'SQL-LAMP-001';
+
+-- 7.7 Reactivate
+UPDATE products SET active = b'1', updated_at = NOW(6) WHERE sku = 'SQL-LAMP-001';
+
+-- 7.8 Inactive (soft-deleted) products
+SELECT product_id, product_name, sku, updated_at FROM products WHERE active = b'0';
+
+-- Clean up the example row created above (only if it was never ordered)
+DELETE FROM products
+WHERE sku = 'SQL-LAMP-001'
+  AND product_id NOT IN (SELECT product_id FROM (SELECT product_id FROM order_items) AS used);

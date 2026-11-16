@@ -28,8 +28,11 @@ import com.example.ecommerce.dtos.common.StatusUpdateRequest;
 import com.example.ecommerce.dtos.order.OrderResponse;
 import com.example.ecommerce.dtos.order.OrderStatusUpdateRequest;
 import com.example.ecommerce.dtos.order.PaymentResponse;
+import com.example.ecommerce.dtos.product.AdminProductRequest;
 import com.example.ecommerce.dtos.product.ProductCategoryRequest;
+import com.example.ecommerce.dtos.product.ProductRequest;
 import com.example.ecommerce.dtos.product.ProductResponse;
+import com.example.ecommerce.dtos.product.ProductSummaryResponse;
 import com.example.ecommerce.dtos.product.RejectProductRequest;
 import com.example.ecommerce.dtos.returns.ReturnDecisionRequest;
 import com.example.ecommerce.dtos.returns.ReturnResponse;
@@ -107,16 +110,44 @@ public class AdminController {
 
     // -------------------------------------------------------------- products
 
-    /** approval=PENDING gives the product approval queue. */
+    /**
+     * Product dashboard. approval=PENDING gives the approval queue; active=true/false shows only active
+     * or inactive (soft-deleted) products.
+     */
     @GetMapping("/products")
     public PageResponse<ProductResponse> products(@RequestParam(required = false) String search,
                                                   @RequestParam(required = false) Integer categoryId,
                                                   @RequestParam(required = false) ApprovalStatus approval,
+                                                  @RequestParam(required = false) Boolean active,
                                                   @RequestParam(defaultValue = "0") int page,
                                                   @RequestParam(defaultValue = "10") int size) {
-        return productService.adminProducts(search, categoryId, approval, page, size);
+        return productService.adminProducts(search, categoryId, approval, active, page, size);
     }
 
+    @GetMapping("/products/summary")
+    public ProductSummaryResponse productSummary() {
+        return productService.adminSummary();
+    }
+
+    @GetMapping("/products/{id}")
+    public ProductResponse product(@PathVariable Long id) {
+        return productService.adminProduct(id);
+    }
+
+    /** Add a new product (admins only): name, description, price, category, SKU and inventory count. */
+    @PostMapping("/products")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ProductResponse createProduct(@Valid @RequestBody AdminProductRequest request) {
+        return productService.adminCreateProduct(request);
+    }
+
+    /** Update product details: price, description, inventory count, category and more. */
+    @PutMapping("/products/{id}")
+    public ProductResponse updateProduct(@PathVariable Long id, @Valid @RequestBody ProductRequest request) {
+        return productService.adminUpdateProduct(id, request);
+    }
+
+    /** Deactivate (soft delete) or reactivate: {"active": false|true}. */
     @PatchMapping("/products/{id}/status")
     public ProductResponse productStatus(@PathVariable Long id, @Valid @RequestBody StatusUpdateRequest request) {
         return productService.adminSetActive(id, request.active());

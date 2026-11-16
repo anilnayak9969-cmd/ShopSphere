@@ -24,8 +24,14 @@ const adminService = {
   getDeliveryPartners: (params) => api.get('/admin/delivery-partners', { params: cleanParams(params) }).then((r) => r.data),
   setDeliveryPartnerStatus: (id, status) => api.patch(`/admin/delivery-partners/${id}/status`, { status }).then((r) => r.data),
 
-  // Products & approval queue
+  // Product Management (dashboard, add, update, deactivate) & approval queue
   getProducts: (params) => api.get('/admin/products', { params: cleanParams(params) }).then((r) => r.data),
+  getProductSummary: () => api.get('/admin/products/summary').then((r) => r.data),
+  getProduct: (id) => api.get(`/admin/products/${id}`).then((r) => r.data),
+  /** { sellerId, product: { productName, description, sku, price, categoryId, stockQuantity, ... } } */
+  createProduct: (payload) => api.post('/admin/products', payload).then((r) => r.data),
+  updateProduct: (id, payload) => api.put(`/admin/products/${id}`, payload).then((r) => r.data),
+  /** active=false is the soft delete (deactivate); true reactivates. */
   setProductActive: (id, active) => api.patch(`/admin/products/${id}/status`, { active }).then((r) => r.data),
   approveProduct: (id) => api.patch(`/admin/products/${id}/approve`).then((r) => r.data),
   moveProduct: (id, categoryId) => api.patch(`/admin/products/${id}/category`, { categoryId }).then((r) => r.data),

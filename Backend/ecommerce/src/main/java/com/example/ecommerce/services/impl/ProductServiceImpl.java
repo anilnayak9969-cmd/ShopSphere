@@ -10,9 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.ecommerce.dtos.common.PageResponse;
+import com.example.ecommerce.dtos.product.AdminProductRequest;
 import com.example.ecommerce.dtos.product.ProductRequest;
 import com.example.ecommerce.dtos.product.ProductResponse;
 import com.example.ecommerce.dtos.product.ProductSuggestion;
+import com.example.ecommerce.dtos.product.ProductSummaryResponse;
 import com.example.ecommerce.dtos.product.SpecificationDto;
 import com.example.ecommerce.entites.Category;
 import com.example.ecommerce.entites.Product;
@@ -29,6 +31,7 @@ import com.example.ecommerce.repositories.UserRepository;
 import com.example.ecommerce.services.CategoryService;
 import com.example.ecommerce.services.NotificationService;
 import com.example.ecommerce.services.ProductService;
+import com.example.ecommerce.services.SettingsService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -43,6 +46,7 @@ public class ProductServiceImpl implements ProductService {
     private final UserRepository userRepository;
     private final CategoryService categoryService;
     private final NotificationService notificationService;
+    private final SettingsService settingsService;
 
     // ------------------------------------------------------------ storefront
 
@@ -183,19 +187,88 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ProductResponse> adminProducts(String search, Integer categoryId, ApprovalStatus approval,
-                                                       int page, int size) {
+                                                       Boolean active, int page, int size) {
         Set<Integer> categoryIds = categoryId == null ? null : categoryService.withDescendants(categoryId);
         Sort sort = approval == ApprovalStatus.PENDING ? Sort.by("updatedAt").ascending() : Sort.by("createdAt").descending();
         PageRequest pageable = PageRequest.of(Math.max(page, 0), clampSize(size), sort);
         return PageResponse.of(productRepository.findAll(
-                ProductSpecifications.filter(Filter.forAdmin(search, categoryIds, approval)), pageable),
+                ProductSpecifications.filter(Filter.forAdmin(search, categoryIds, approval, active)), pageable),
                 ProductResponse::from);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProductSummaryResponse adminSummary() {
+        int lowStock = settingsService.get().getLowStockThreshold();
+        long total = productRepository.count();
+        long active = productRepository.countByActiveTrue();
+        return new ProductSummaryResponse(total, active, total - active,
+                productRepository.countByApprovalStatus(ApprovalStatus.PENDING),
+                productRepository.countByActiveTrueAndStockQuantityLessThanEqual(lowStock), lowStock);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProductResponse adminProduct(Long productId) {
+        return ProductResponse.detailed(findAny(productId));
+    }
+
+    @Override
+    @Transactional
+    public ProductResponse adminCreateProduct(AdminProductRequest request) {
+        User seller = userRepository.findById(request.sellerId())
+                .orElseThrow(() -> ApiException.badRequest("SELLER_NOT_FOUND", "The selected store does not exist."));
+        if (seller.getSellerStatus() != SellerStatus.APPROVED || !seller.isActive()) {
+            throw ApiException.badRequest("SELLER_NOT_APPROVED",
+                    "Products can only be added to an approved, active store.");
+        }
+        ProductRequest details = request.product();
+        Category category = requireActiveCategory(details.categoryId());
+        String sku = details.sku().trim().toUpperCase();
+        if (productRepository.existsBySkuIgnoreCase(sku)) {
+            throw ApiException.conflict("DUPLICATE_SKU", "SKU " + sku + " is already in use.");
+        }
+        Product product = new Product();
+        product.setSeller(seller);
+        product.setActive(true);
+        // Added by the admin, so there is nothing left to review.
+        product.setApprovalStatus(ApprovalStatus.APPROVED);
+        apply(product, details, category, sku);
+        Product saved = productRepository.save(product);
+        notificationService.notify(seller, "Product added to your store",
+                "The ShopSphere team added \"" + saved.getProductName() + "\" to your store. It is live now.",
+                "/seller/products/" + saved.getProductId() + "/edit");
+        return ProductResponse.detailed(saved);
+    }
+
+    @Override
+    @Transactional
+    public ProductResponse adminUpdateProduct(Long productId, ProductRequest request) {
+        Product product = findAny(productId);
+        // The current category may stay even if it was deactivated later; a new one must be active.
+        Category category = product.getCategory().getCategoryId().equals(request.categoryId())
+                ? product.getCategory()
+                : requireActiveCategory(request.categoryId());
+        String sku = request.sku().trim().toUpperCase();
+        if (productRepository.existsBySkuIgnoreCaseAndProductIdNot(sku, productId)) {
+            throw ApiException.conflict("DUPLICATE_SKU", "SKU " + sku + " is already in use.");
+        }
+        apply(product, request, category, sku);
+        Product saved = productRepository.saveAndFlush(product);
+        notificationService.notify(product.getSeller(), "Product updated by ShopSphere",
+                "The ShopSphere team updated \"" + saved.getProductName() + "\".",
+                "/seller/products/" + saved.getProductId() + "/edit");
+        return ProductResponse.detailed(saved);
     }
 
     @Override
     @Transactional
     public ProductResponse adminSetActive(Long productId, boolean active) {
         Product product = findAny(productId);
+        if (active && !product.getCategory().isStatus()) {
+            throw ApiException.badRequest("CATEGORY_INACTIVE",
+                    "This product's category is inactive. Edit the product and choose an active category first.");
+        }
         product.setActive(active);
         return ProductResponse.from(productRepository.saveAndFlush(product));
     }
