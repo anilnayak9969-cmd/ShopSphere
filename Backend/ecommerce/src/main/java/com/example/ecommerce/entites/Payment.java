@@ -70,4 +70,16 @@ public class Payment extends AuditableEntity {
 
     @Column(name = "failure_reason", length = 255)
     private String failureReason;
+
+    /**
+     * How the customer paid: card, UPI, net banking, wallet, PayPal (from Razorpay) or cash on delivery.
+     * Null for online payments that were never completed.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private com.example.ecommerce.enums.PaymentInstrument instrument;
+
+    /** Non-sensitive detail, e.g. "Visa ···· 1111", "HDFC Bank", "paytm" (never full card numbers). */
+    @Column(name = "instrument_detail", length = 80)
+    private String instrumentDetail;
 }

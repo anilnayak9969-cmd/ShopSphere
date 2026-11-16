@@ -47,6 +47,13 @@ Built against the given `users` table (`user_id`, `first_name`, `last_name`, `em
 3. **Update customer details**: edit name, email, mobile number and account status (email stays unique).
 4. **Deactivate**: a **soft delete** through `active` after a warning. The customer is refused at sign-in, and their profile, addresses and orders are kept. **Activate** restores the account.
 
+### Module 5 — Payment Management (assignment module)
+Built against the given `payments` table (`payment_id`, `order_id`, `amount`, `payment_method` → `method` + `instrument`, `payment_status` → `status`, `created_at`, `updated_at`), plus a new `refunds` log table. Full guide, screenshots and the submission PDF: [`Docs/PaymentManagement`](Docs/PaymentManagement/README.md).
+
+1. **Process payment** through the **Razorpay** gateway: cards, UPI, net banking, wallets (incl. PayPal), or Cash on Delivery. Signature-verified, with a signed webhook. The method used is saved per payment (e.g. "Visa ···· 1111", "HDFC" net banking); card data is never stored.
+2. **Payment dashboard** (**Admin → Payments & refunds**): collected/refunded/net/cash-due cards, and every payment's ID, Razorpay ID, order, customer, method, amount, refunds and status, with filters and search.
+3. **Refunds**: automatic on cancellation or approved return, plus an admin **Refund ₹…** button for cancelled or returned orders (never more than was paid). Every refund — automatic, admin, or failed — is logged in `refunds` and shown under **Refund history**.
+
 ### Accounts & security
 - **Separate full-screen Login and Register pages**, with no store header, an image panel that changes with the chosen role and links between the two.
 - **Register by role**. Every role starts with name, email, 10-digit mobile, a strong password and acceptance of the terms, then adds its own details:
@@ -195,11 +202,12 @@ My_Project_2/
 └── DataBase/
     ├── Internship_Ecommerce.sql        Creates the database, all 23 tables, platform settings and the coupon
     ├── catalog_data.sql                Stores, category tree, 77 products, photos, specifications, demo accounts
-    └── queries.sql                     Category, Product, Order and Customer Management SQL + reports, approval queue, fulfilment, returns, commission
+    └── queries.sql                     Category, Product, Order, Customer and Payment Management SQL + reports, approval queue, fulfilment, returns, commission
 Docs/
 ├── ProductManagement/                  Product Management README, submission PDF (+ HTML source) and screenshots
 ├── OrderManagement/                    Order Management README, submission PDF (+ HTML source) and screenshots
-└── CustomerManagement/                 Customer Management README, submission PDF (+ HTML source) and screenshots
+├── CustomerManagement/                 Customer Management README, submission PDF (+ HTML source) and screenshots
+└── PaymentManagement/                  Payment Management README, submission PDF (+ HTML source) and screenshots
 ```
 
 ---
@@ -214,7 +222,7 @@ In MySQL Workbench open `DataBase/Internship_Ecommerce.sql` and execute it, or r
 ```bash
 mysql -u root -p < DataBase/Internship_Ecommerce.sql
 ```
-This creates `ecommerce_intern`, all 23 tables, the platform settings row and the `WELCOME10` coupon. Then load the catalogue with `mysql -u root -p ecommerce_intern < DataBase/catalog_data.sql`, or just start the backend, which loads the same catalogue itself. It is safe to run more than once. The backend also creates and updates tables automatically, so this step is optional. `DataBase/queries.sql` contains ready-to-run queries for the Category Management module (section 1), the Product Management module (section 7), the Order Management module (section 8), the Customer Management module (section 9) and reports.
+This creates `ecommerce_intern`, all 23 tables, the platform settings row and the `WELCOME10` coupon. Then load the catalogue with `mysql -u root -p ecommerce_intern < DataBase/catalog_data.sql`, or just start the backend, which loads the same catalogue itself. It is safe to run more than once. The backend also creates and updates tables automatically, so this step is optional. `DataBase/queries.sql` contains ready-to-run queries for the Category Management module (section 1), the Product Management module (section 7), the Order Management module (section 8), the Customer Management module (section 9), the Payment Management module (section 10) and reports.
 
 ### 2. Backend secrets
 Copy `Backend/ecommerce/src/main/resources/application-secrets.example.properties` to `application-secrets.properties` in the same folder and fill it in. This file is git-ignored.
@@ -318,6 +326,7 @@ All endpoints are prefixed with `/api`. Protected endpoints need the header `Aut
 | Dashboard & people | `GET /admin/dashboard`, `GET /admin/users?role=`, `POST /admin/admins` (create an admin), `PATCH /admin/sellers/{id}/status`, `PATCH /admin/users/{id}/status`, `GET /admin/delivery-partners?status=&search=`, `PATCH /admin/delivery-partners/{id}/status` |
 | Product Management | `GET /admin/products?search=&categoryId=&approval=&active=`, `GET /admin/products/summary`, `GET /admin/products/{id}`, `POST /admin/products` (`{ sellerId, product }`), `PUT /admin/products/{id}`, `PATCH /admin/products/{id}/status` (deactivate/activate), `PATCH /admin/products/{id}/approve`, `PATCH /admin/products/{id}/reject`, `PATCH /admin/products/{id}/category` |
 | Order Management | `GET /admin/orders?group=PENDING\|SHIPPED\|DELIVERED\|CANCELLED\|RETURNS\|UNPAID&status=&search=`, `GET /admin/orders/summary`, `GET /admin/orders/{id}`, `PATCH /admin/orders/{id}/status` (`{ status, note }`; forward jumps allowed; `CANCELLED` cancels unshipped items) |
+| Payment Management | `GET /admin/payments?status=&refundedOnly=&method=&search=`, `GET /admin/payments/summary`, `POST /admin/payments/{id}/refund` (`{ amount, reason }`), `GET /admin/refunds`, `GET /admin/payments/{id}/refunds` |
 | Payments & returns | `GET /admin/payments?status=&refundedOnly=`, `GET /admin/returns?status=`, `PATCH /admin/returns/{id}` |
 | Reports, settings, inbox | `GET /admin/reports?days=`, `GET/PUT /admin/settings`, `GET /admin/messages?resolved=`, `PATCH /admin/messages/{id}` |
 | Coupons | `GET/POST /admin/coupons`, `PUT /admin/coupons/{id}`, `PATCH /admin/coupons/{id}/status` |
@@ -340,7 +349,8 @@ All endpoints are prefixed with `/api`. Protected endpoints need the header `Aut
 | `wishlist_items` | Saved products; `(user_id, product_id)` unique |
 | `addresses` | Customer address book with one default |
 | `orders` / `order_items` | Order Management tables. Address, product and price **snapshots**, coupon, payment method, `tax_amount` (GST included), `active` (false = cancelled, soft delete). Each item has its own `item_status`, courier and tracking number, and `delivery_partner_id` / `assigned_at` when a ShopSphere partner delivers it |
-| `payments` | Method (RAZORPAY/COD), status, Razorpay IDs, `refunded_amount`. Card data is never stored |
+| `payments` | Payment Management table. Method (RAZORPAY/COD), `instrument` (card, UPI, net banking, wallet, PayPal, cash) with a masked detail, status, Razorpay IDs, `refunded_amount`. Card data is never stored |
+| `refunds` | Refund log: one row per refund transaction (amount, Razorpay or manual, processed/failed, `rfnd_…` id, reason, issued by) |
 | `return_requests` | One per order item: reason, status, refund amount, the seller who decides |
 | `reviews` | One review per customer per product; `(product_id, user_id)` unique |
 | `coupons` / `coupon_redemptions` | Discount rules; one redemption per customer, linked to the order |
@@ -358,7 +368,7 @@ Money uses `DECIMAL(12,2)`. Products and categories are never hard-deleted, so o
 ```bash
 cd Backend/ecommerce && ./mvnw test
 ```
-There are **78 tests**: Customer Management rules (admin-added customers verified and active with a hashed password, duplicate emails refused, contact and status updates, soft-delete deactivation, customer-only access, order history totals), Order Management rules (GST included in the total, dashboard status groups, admin Pending → Shipped jumps with every step recorded, no backward moves, customer cancel until shipping, no admin cancel after shipping), role-based registration (customer, seller, delivery partner and admin access-code rules, vehicle-number formats), Category Management rules (including subcategory cycles), Product Management rules (admin add is approved and live, unapproved stores and duplicate SKUs refused, updates keep approval, inactive categories refused, deactivation is a soft delete), OTP security, Razorpay checkout and webhook signatures, idempotent payment verification, the sold-out refund path, coupon rules (caps, minimum order, expiry, usage limits, one use per customer), verified-purchase reviews, pricing, shipping and commission rules, COD checkout, and item-level order status derivation. The `contextLoads` test needs MySQL running.
+There are **85 tests**: Payment Management rules (Razorpay method mapping incl. PayPal, masked card/UPI details, every refund logged with its Razorpay refund ID, failed refunds logged but not counted, admin refunds only for cancelled/returned orders and never above what was paid), Customer Management rules (admin-added customers verified and active with a hashed password, duplicate emails refused, contact and status updates, soft-delete deactivation, customer-only access, order history totals), Order Management rules (GST included in the total, dashboard status groups, admin Pending → Shipped jumps with every step recorded, no backward moves, customer cancel until shipping, no admin cancel after shipping), role-based registration (customer, seller, delivery partner and admin access-code rules, vehicle-number formats), Category Management rules (including subcategory cycles), Product Management rules (admin add is approved and live, unapproved stores and duplicate SKUs refused, updates keep approval, inactive categories refused, deactivation is a soft delete), OTP security, Razorpay checkout and webhook signatures, idempotent payment verification, the sold-out refund path, coupon rules (caps, minimum order, expiry, usage limits, one use per customer), verified-purchase reviews, pricing, shipping and commission rules, COD checkout, and item-level order status derivation. The `contextLoads` test needs MySQL running.
 
 Frontend: `npm run lint` and `npm run build`.
 

@@ -50,6 +50,8 @@ import com.example.ecommerce.services.ContactService;
 import com.example.ecommerce.services.DeliveryPartnerService;
 import com.example.ecommerce.services.DashboardService;
 import com.example.ecommerce.services.OrderService;
+import com.example.ecommerce.services.PaymentAdminService;
+import com.example.ecommerce.enums.PaymentMethod;
 import com.example.ecommerce.services.ProductService;
 import com.example.ecommerce.services.ReportService;
 import com.example.ecommerce.services.ReturnService;
@@ -76,6 +78,7 @@ public class AdminController {
     private final SettingsService settingsService;
     private final ContactService contactService;
     private final DeliveryPartnerService deliveryPartnerService;
+    private final PaymentAdminService paymentAdminService;
 
     @GetMapping("/dashboard")
     public AdminDashboardResponse dashboard() {
@@ -202,12 +205,18 @@ public class AdminController {
 
     // ------------------------------------------------------ payments/returns
 
+    /**
+     * Payment dashboard (Payment Management module): status, refundedOnly and method (RAZORPAY|COD)
+     * filters; search by order number, customer or Razorpay payment id.
+     */
     @GetMapping("/payments")
     public PageResponse<PaymentResponse> payments(@RequestParam(required = false) PaymentStatus status,
                                                   @RequestParam(defaultValue = "false") boolean refundedOnly,
+                                                  @RequestParam(required = false) PaymentMethod method,
+                                                  @RequestParam(required = false) String search,
                                                   @RequestParam(defaultValue = "0") int page,
                                                   @RequestParam(defaultValue = "10") int size) {
-        return orderService.adminPayments(status, refundedOnly, page, size);
+        return paymentAdminService.list(status, refundedOnly, method, search, page, size);
     }
 
     @GetMapping("/returns")

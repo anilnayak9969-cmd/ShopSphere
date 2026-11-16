@@ -48,16 +48,66 @@ public class RazorpayGateway {
         return order.get("id");
     }
 
-    /** Full refund of a captured payment. */
-    public void refund(String razorpayPaymentId) throws RazorpayException {
-        client().payments.refund(razorpayPaymentId);
-    }
-
-    /** Partial (or full) refund of a captured payment, amount in paise. */
-    public void refund(String razorpayPaymentId, long amountInPaise) throws RazorpayException {
+    /** Partial (or full) refund of a captured payment, amount in paise. Returns Razorpay's refund id (rfnd_…). */
+    public String refund(String razorpayPaymentId, long amountInPaise) throws RazorpayException {
         JSONObject request = new JSONObject();
         request.put("amount", amountInPaise);
-        client().payments.refund(razorpayPaymentId, request);
+        com.razorpay.Refund refund = client().payments.refund(razorpayPaymentId, request);
+        Object id = refund.get("id");
+        return id == null ? null : id.toString();
+    }
+
+    /** How a payment was made, without anything sensitive. */
+    public record PaymentDetails(String method, String wallet, String detail) {
+    }
+
+    /**
+     * Asks Razorpay how a captured payment was made (card, UPI, net banking, wallet, PayPal …).
+     * Used to record the payment method on our side; card details come back masked (network + last 4).
+     */
+    public PaymentDetails fetchPaymentDetails(String razorpayPaymentId) throws RazorpayException {
+        JSONObject json = client().payments.fetch(razorpayPaymentId).toJson();
+        PaymentDetails details = detailsOf(json);
+        if ("card".equals(details.method()) && !json.has("card")) {
+            try {
+                JSONObject card = client().cards.fetchCardDetails(razorpayPaymentId).toJson();
+                return new PaymentDetails(details.method(), null, cardText(card));
+            } catch (RazorpayException ex) {
+                return details; // card details are optional
+            }
+        }
+        return details;
+    }
+
+    /** Reads the method and a safe description from a Razorpay payment entity (API response or webhook). */
+    public static PaymentDetails detailsOf(JSONObject payment) {
+        String method = payment.optString("method", null);
+        String wallet = payment.optString("wallet", null);
+        String detail = switch (method == null ? "" : method) {
+            case "card", "emi" -> payment.has("card") ? cardText(payment.getJSONObject("card")) : null;
+            case "netbanking" -> payment.optString("bank", null);
+            case "wallet" -> wallet;
+            case "upi" -> maskVpa(payment.optString("vpa", null));
+            default -> null;
+        };
+        return new PaymentDetails(method, wallet, detail);
+    }
+
+    private static String cardText(JSONObject card) {
+        String network = card.optString("network", "Card");
+        String last4 = card.optString("last4", "");
+        String type = card.optString("type", "");
+        return (network + (type.isBlank() ? "" : " " + type) + (last4.isBlank() ? "" : " ···· " + last4)).trim();
+    }
+
+    /** "priya.s@okhdfc" -> "pr···@okhdfc": enough to recognise the app, not the person. */
+    private static String maskVpa(String vpa) {
+        if (vpa == null || !vpa.contains("@")) {
+            return null;
+        }
+        String[] parts = vpa.split("@", 2);
+        String user = parts[0].length() <= 2 ? parts[0] : parts[0].substring(0, 2);
+        return user + "···@" + parts[1];
     }
 
     /**

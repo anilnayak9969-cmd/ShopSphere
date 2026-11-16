@@ -53,6 +53,21 @@ public class SchemaPatcher implements CommandLineRunner {
         addGeneratedColumn("users", "last_name",
                 "varchar(100) generated always as (trim(substring(trim(full_name), "
                         + "char_length(substring_index(trim(full_name), ' ', 1)) + 1))) virtual");
+
+        // Payment Management: cash on delivery payments are paid in cash; online ones are filled in from
+        // Razorpay by PaymentInstrumentBackfill. Refunds made before the refunds log existed get one row each.
+        int cash = jdbc.update("update payments set instrument = 'CASH' where method = 'COD' and instrument is null");
+        int legacyRefunds = jdbc.update("""
+                insert into refunds (payment_id, amount, mode, status, reason, initiated_by, created_at, updated_at)
+                select p.payment_id, p.refunded_amount, if(p.method = 'COD', 'MANUAL', 'RAZORPAY'), 'PROCESSED',
+                       'Refunded before the refund log was added', 'System', p.updated_at, p.updated_at
+                from payments p
+                where p.refunded_amount > 0
+                  and not exists (select 1 from refunds r where r.payment_id = p.payment_id)
+                """);
+        if (cash + legacyRefunds > 0) {
+            log.info("Schema patch: set {} cash payment(s), logged {} earlier refund(s)", cash, legacyRefunds);
+        }
     }
 
     private void addGeneratedColumn(String table, String column, String definition) {

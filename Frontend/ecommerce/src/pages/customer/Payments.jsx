@@ -45,7 +45,10 @@ export default function Payments() {
                         </Link>
                         <div className="ss-cell-sub">{formatDateTime(p.createdAt)}</div>
                       </td>
-                      <td>{p.method === 'COD' ? 'Cash on Delivery' : 'Online (Razorpay)'}</td>
+                      <td>
+                        {p.method === 'COD' ? 'Cash on Delivery' : p.instrumentLabel ? `${p.instrumentLabel} (Razorpay)` : 'Online (Razorpay)'}
+                        {p.instrumentDetail && <div className="small text-muted">{p.instrumentDetail}</div>}
+                      </td>
                       <td>
                         <div className="fw-semibold">{formatPrice(p.amount)}</div>
                         {Number(p.refundedAmount) > 0 && <div className="small text-success">Refunded {formatPrice(p.refundedAmount)}</div>}

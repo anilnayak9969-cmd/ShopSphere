@@ -54,7 +54,13 @@ const adminService = {
   getOrderSummary: () => api.get('/admin/orders/summary').then((r) => r.data),
   getOrder: (id) => api.get(`/admin/orders/${id}`).then((r) => r.data),
   setOrderStatus: (id, status, note) => api.patch(`/admin/orders/${id}/status`, { status, note }).then((r) => r.data),
+  // Payment Management: params { status, refundedOnly, method: RAZORPAY|COD, search, page, size }
   getPayments: (params) => api.get('/admin/payments', { params: cleanParams(params) }).then((r) => r.data),
+  getPaymentSummary: () => api.get('/admin/payments/summary').then((r) => r.data),
+  getRefunds: (params) => api.get('/admin/refunds', { params: cleanParams(params) }).then((r) => r.data),
+  getPaymentRefunds: (id) => api.get(`/admin/payments/${id}/refunds`).then((r) => r.data),
+  /** { amount, reason } — only for cancelled or returned orders */
+  issueRefund: (id, payload) => api.post(`/admin/payments/${id}/refund`, payload).then((r) => r.data),
   getReturns: (params) => api.get('/admin/returns', { params: cleanParams(params) }).then((r) => r.data),
   decideReturn: (id, approve, note) => api.patch(`/admin/returns/${id}`, { approve, note }).then((r) => r.data),
 

@@ -31,6 +31,7 @@ import com.example.ecommerce.entites.PlatformSettings;
 import com.example.ecommerce.entites.Product;
 import com.example.ecommerce.entites.User;
 import com.example.ecommerce.enums.OrderStatus;
+import com.example.ecommerce.enums.PaymentInstrument;
 import com.example.ecommerce.enums.PaymentMethod;
 import com.example.ecommerce.enums.PaymentStatus;
 import com.example.ecommerce.exception.ApiException;
@@ -206,7 +207,7 @@ public class CheckoutServiceImpl implements CheckoutService {
             throw ApiException.badRequest("PAYMENT_VERIFICATION_FAILED",
                     "We could not verify this payment. If money was debited, it will be refunded by Razorpay.");
         }
-        completePayment(payment, request.razorpayPaymentId());
+        completePayment(payment, request.razorpayPaymentId(), null);
         return OrderResponse.full(payment.getOrder(), info(payment));
     }
 
@@ -252,7 +253,7 @@ public class CheckoutServiceImpl implements CheckoutService {
             case "payment.captured" -> {
                 if (!isFinal(payment)) {
                     log.info("Completing order {} from webhook", payment.getOrder().getOrderNumber());
-                    completePayment(payment, entity.getString("id"));
+                    completePayment(payment, entity.getString("id"), entity);
                 }
             }
             case "payment.failed" -> markFailed(payment, entity.optString("error_description", "Payment failed"));
@@ -262,12 +263,13 @@ public class CheckoutServiceImpl implements CheckoutService {
 
     // --------------------------------------------------------------- helpers
 
-    /** Shared by the browser verification and the webhook. */
-    private void completePayment(Payment payment, String razorpayPaymentId) {
+    /** Shared by the browser verification and the webhook (which already carries the payment entity). */
+    private void completePayment(Payment payment, String razorpayPaymentId, JSONObject webhookEntity) {
         CustomerOrder order = payment.getOrder();
         payment.setRazorpayPaymentId(razorpayPaymentId);
         payment.setStatus(PaymentStatus.SUCCESS);
         payment.setFailureReason(null);
+        recordInstrument(payment, razorpayPaymentId, webhookEntity);
         order.setPaidAt(LocalDateTime.now());
 
         if (!placeOrder(order)) {
@@ -318,7 +320,27 @@ public class CheckoutServiceImpl implements CheckoutService {
         payment.setAmount(order.getTotalAmount());
         payment.setCurrency("INR");
         payment.setStatus(status);
+        if (method == PaymentMethod.COD) {
+            payment.setInstrument(PaymentInstrument.CASH);
+        }
         return payment;
+    }
+
+    /**
+     * Records how the customer paid (card, UPI, net banking, wallet, PayPal). Best effort: if Razorpay
+     * cannot be reached the order still completes, and the method is filled in later by the backfill.
+     */
+    private void recordInstrument(Payment payment, String razorpayPaymentId, JSONObject webhookEntity) {
+        try {
+            RazorpayGateway.PaymentDetails details = webhookEntity != null
+                    ? RazorpayGateway.detailsOf(webhookEntity)
+                    : razorpayGateway.fetchPaymentDetails(razorpayPaymentId);
+            payment.setInstrument(PaymentInstrument.fromRazorpay(details.method(), details.wallet()));
+            payment.setInstrumentDetail(details.detail() == null || details.detail().length() <= 80
+                    ? details.detail() : details.detail().substring(0, 80));
+        } catch (Exception ex) {
+            log.warn("Could not read the payment method of {}: {}", razorpayPaymentId, ex.getMessage());
+        }
     }
 
     private static PaymentInfo info(Payment p) {

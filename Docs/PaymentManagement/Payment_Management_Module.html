@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ShopSphere — Payment Management Module</title>
+<style>
+  @page { size: A4; margin: 18mm 17mm 20mm 17mm; }
+  :root { --navy: #14213d; --blue: #2563eb; --ink: #1f2937; --muted: #6b7280; --line: #cfd6e0; --head: #eef1f5; --warn: #fff7e6; --warn-line: #f59e0b; --ok: #e8f6ee; --ok-ink: #137a3e; }
+  * { box-sizing: border-box; }
+  body { font-family: Calibri, "Segoe UI", Arial, sans-serif; color: var(--ink); font-size: 10.6pt; line-height: 1.42; margin: 0; }
+  h1 { font-size: 23pt; color: var(--navy); margin: 0 0 2pt; letter-spacing: -0.2pt; }
+  .subtitle { font-size: 14pt; color: var(--muted); margin: 0 0 4pt; }
+  .byline { color: var(--muted); margin-bottom: 14pt; }
+  h2 { font-size: 15.5pt; color: var(--navy); margin: 18pt 0 6pt; page-break-after: avoid; }
+  h3 { font-size: 12.3pt; color: var(--blue); margin: 14pt 0 5pt; page-break-after: avoid; }
+  p { margin: 0 0 7pt; }
+  ul, ol { margin: 0 0 8pt; padding-left: 20pt; }
+  li { margin-bottom: 2.5pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 10pt; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  th, td { border: 1px solid var(--line); padding: 5pt 7pt; text-align: left; vertical-align: top; }
+  th { background: var(--head); font-weight: 700; }
+  code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 9.2pt; }
+  pre { background: #f2f4f7; padding: 7pt 9pt; font-family: Consolas, monospace; font-size: 8.5pt; line-height: 1.35; white-space: pre-wrap; margin: 4pt 0 10pt; }
+  pre .c { color: #6b7280; }
+  .note { background: var(--warn); border-left: 4pt solid var(--warn-line); padding: 6pt 9pt; margin: 6pt 0 10pt; }
+  .done { background: var(--ok); color: var(--ok-ink); font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; white-space: nowrap; font-size: 9.5pt; }
+  .new { background: #e8f0fe; color: #1d4ed8; font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; white-space: nowrap; font-size: 8.5pt; }
+  figure { margin: 8pt 0 12pt; text-align: center; page-break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid var(--line); }
+  figcaption { font-style: italic; color: #4b5563; font-size: 9.6pt; margin-top: 4pt; }
+  .page-break { page-break-before: always; }
+  .small { font-size: 9.5pt; color: var(--muted); }
+  a { color: var(--blue); }
+</style>
+</head>
+<body>
+
+<h1>ShopSphere — Payment Management Module</h1>
+<div class="subtitle">Assignment submission and end user documentation</div>
+<div class="byline">Anil Nayak · 16 November 2026</div>
+
+<h2>Submission details</h2>
+<p>This document submits the Payment Management module of ShopSphere, a multi-vendor e-commerce website, with its code repository, hosted link, requirement checklist and user guide.</p>
+<table>
+  <tr><th style="width:32%">Item</th><th>Details</th></tr>
+  <tr><td>Candidate</td><td>Anil Nayak</td></tr>
+  <tr><td>Internship</td><td>ITVedant / Vibgyor Advisors integrated internship</td></tr>
+  <tr><td>Project</td><td>ShopSphere — multi-vendor e-commerce platform</td></tr>
+  <tr><td>Module</td><td>Payment Management (checkout and Admin console)</td></tr>
+  <tr><td>Payment gateway</td><td>Razorpay (test mode): cards, UPI, net banking, wallets including PayPal; plus Cash on Delivery</td></tr>
+  <tr><td>Frontend</td><td>React 19, Vite, React Router, Bootstrap 5</td></tr>
+  <tr><td>Backend</td><td>Java 17, Spring Boot 4, Spring Security (JWT), Spring Data JPA, Razorpay Java SDK</td></tr>
+  <tr><td>Database</td><td>MySQL (database <code>ecommerce_intern</code>, tables <code>payments</code> and <code>refunds</code>)</td></tr>
+</table>
+
+<h2>1. GitHub repository link</h2>
+<p><b>Repository:</b> <a href="https://github.com/anilnayak9969-cmd/ShopSphere">https://github.com/anilnayak9969-cmd/ShopSphere</a></p>
+<p>The repository holds the complete project. Secret settings (database password, JWT secret, Razorpay API keys and webhook secret, email password) are not committed; an example settings file shows what to fill in.</p>
+<table>
+  <tr><th style="width:32%">Folder</th><th>Contents</th></tr>
+  <tr><td><code>Backend/ecommerce</code></td><td>Spring Boot API. The module's code is <code>RazorpayGateway</code> (the only class that talks to Razorpay), <code>CheckoutServiceImpl</code> (create, verify and complete payments, webhook), <code>RefundService</code> (refunds + refund log), <code>PaymentAdminServiceImpl</code> (dashboard, summary, admin refunds), <code>AdminPaymentController</code>, <code>PaymentWebhookController</code>, the <code>Payment</code> and <code>Refund</code> entities and <code>PaymentInstrument</code>. Tests: <code>PaymentManagementTest</code>, <code>CheckoutServiceImplTest</code>.</td></tr>
+  <tr><td><code>Frontend/ecommerce</code></td><td>React website. Customers pay at <code>src/pages/Checkout.jsx</code> (Razorpay Checkout loaded by <code>src/utils/razorpay.js</code>) and see <code>src/pages/customer/Payments.jsx</code>; the admin screen is <code>src/pages/admin/AdminPayments.jsx</code>.</td></tr>
+  <tr><td><code>DataBase</code></td><td><code>queries.sql</code> (section 10: Payment Management SQL)</td></tr>
+  <tr><td><code>Docs/PaymentManagement</code></td><td>This document, its screenshots and the module README</td></tr>
+  <tr><td><code>README.md</code></td><td>Setup steps (including Razorpay keys and webhook), features and API reference</td></tr>
+</table>
+
+<h2>2. URL of the module hosted on a free server</h2>
+<p><b>Website:</b> <a href="https://host-shop-sphere.vercel.app/">https://host-shop-sphere.vercel.app/</a></p>
+<p>To try the module, sign in with the admin account below and open <b>Admin console → Payments &amp; refunds</b>. Customers pay at checkout.</p>
+<table>
+  <tr><th style="width:50%">Login</th><th>Value</th></tr>
+  <tr><td>Admin email</td><td>admin@shopsphere.com</td></tr>
+  <tr><td>Admin password</td><td><i>(shared separately with the evaluator)</i></td></tr>
+  <tr><td>Razorpay test card</td><td>4111 1111 1111 1111, any future expiry, any CVV (test mode — no real money)</td></tr>
+</table>
+<div class="note"><b>Hosting status:</b> only the React frontend is deployed on Vercel. The Spring Boot backend and the MySQL database are not online yet, so the hosted site cannot take payments or load the dashboard. The new Payment Management screens appear on the hosted site after the latest code is pushed and redeployed. All screenshots in this document were taken from the complete application running locally, connected to Razorpay in test mode.</div>
+
+<h2>3. Requirement checklist — is the module implemented?</h2>
+<p>Every functionality in the assignment is implemented and was tested in the running application. Online payment through Razorpay and automatic refunds already existed in ShopSphere; the items marked <span class="new">ADDED</span> were built for this assignment.</p>
+<table>
+  <tr><th style="width:24%">Requirement</th><th>How ShopSphere implements it</th><th style="width:14%">Status</th></tr>
+  <tr><td><b>1. Process payment</b><br>Through an external gateway; cards, PayPal and bank transfers</td><td>Payments go through <b>Razorpay</b>, an external payment gateway (the Indian equivalent of Stripe). Razorpay's secure window offers <b>credit/debit cards</b>, <b>UPI</b>, <b>net banking</b> (bank transfer) and <b>wallets including PayPal</b>; customers can also choose <b>Cash on Delivery</b>. The server creates the Razorpay order, checks Razorpay's HMAC-SHA256 signature before confirming, and also accepts Razorpay's signed webhook. The exact method used (e.g. "Visa ···· 1111", "UPI", "HDFC net banking", "PayPal") is now recorded on each payment <span class="new">ADDED</span>. Card numbers are never seen or stored.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>2. Payment dashboard</b><br>Transaction history with payment ID, amount, payment method and status</td><td><b>Admin → Payments &amp; refunds</b>: summary cards <span class="new">ADDED</span> (collected, refunded, net, successful/failed, cash due), and every payment with <b>payment ID</b>, Razorpay reference, order and customer, <b>payment method</b> <span class="new">ADDED</span>, <b>amount</b>, refunded amount and <b>status</b>. Filters: All / Paid / COD due / Refunded / Failed / Any refund / Abandoned, method filter and search <span class="new">ADDED</span>.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>3. Refund payment</b><br>Admins issue refunds for cancelled or returned orders; refunds are logged and shown on the dashboard</td><td>Refunds happen automatically when an order is cancelled or a return is approved. Admins can now also issue a refund themselves with <b>Refund ₹…</b> <span class="new">ADDED</span> — only for cancelled or returned orders and never more than was paid. Every refund (automatic or by an admin, successful or failed) is written to a new <b>refunds</b> table <span class="new">ADDED</span> and shown in <b>Refund history</b> on the dashboard <span class="new">ADDED</span>.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>Database design</b><br>Table <code>payments</code></td><td>All assignment columns exist (see Appendix A); <code>instrument</code> / <code>instrument_detail</code> and the <code>refunds</code> table were added.</td><td><span class="done">Implemented</span></td></tr>
+</table>
+
+<h2>4. End user documentation — Payment Management</h2>
+<p>Payment Management takes the customer's money safely and keeps a record of every transaction. Customers pay at checkout; the ShopSphere administrator watches every payment, sees how much was collected and refunded, and refunds customers whose orders were cancelled or returned.</p>
+<p><b>Payment statuses.</b> <b>Paid</b> (success) — the money was received. <b>Collect on delivery</b> — a Cash on Delivery order whose cash is collected when it is delivered. <b>Failed</b> — the customer's bank declined or the window was closed. <b>Not completed</b> — the customer opened the payment window but never paid. <b>Refunded</b> — all of the money was given back. <b>Cancelled</b> — a cash order was cancelled before delivery, so nothing was collected.</p>
+<p><b>Who uses it:</b> customers pay and see their own payment history; only users with the <b>Admin</b> role see all payments and issue refunds.</p>
+
+<h3>4.1 Pay for an order (customer)</h3>
+<ol>
+  <li>Add products to the cart, click <b>Proceed to checkout</b>, choose the delivery address and review the items.</li>
+  <li>On the <b>Payment</b> step choose:
+    <ol type="a">
+      <li><b>Pay online</b> — click <b>Pay ₹… securely</b>. Razorpay's secure window opens. Choose <b>Cards</b> (credit or debit), <b>UPI</b>, <b>Netbanking</b> (pay straight from a bank account) or <b>Wallet</b> (including PayPal where enabled), and complete the payment.</li>
+      <li><b>Cash on Delivery</b> — click <b>Place order · Pay ₹… on delivery</b> and pay the delivery partner in cash (available up to ₹10,000).</li>
+    </ol></li>
+  <li>When Razorpay reports success, ShopSphere checks Razorpay's signature, confirms the order and shows the confirmation page. If the payment fails, a message explains why and the customer can try again.</li>
+  <li>The customer sees every payment under <b>My account → Payments</b>.</li>
+</ol>
+<figure><img src="screenshots/p01-checkout-methods.png"><figcaption>Figure 1 — Checkout, Payment step: Pay online (cards, UPI, net banking, wallets through Razorpay) or Cash on Delivery. The total includes the ₹49 delivery fee.</figcaption></figure>
+<figure><img src="screenshots/p02-razorpay-checkout.png"><figcaption>Figure 2 — Razorpay's secure payment window (test mode) with Cards, Netbanking and Wallet. ShopSphere never sees the card number; Razorpay sends back only a signed payment reference.</figcaption></figure>
+<figure><img src="screenshots/p09-customer-payments.png"><figcaption>Figure 3 — The customer's payment history: method (e.g. Wallet — mobikwik, Cash on Delivery), amount, refunds and status.</figcaption></figure>
+
+<h3>4.2 The payment dashboard (admin)</h3>
+<ol>
+  <li>Sign in with the admin account and click <b>Payments &amp; refunds</b> in the left menu.</li>
+  <li>The <b>Payment management</b> page opens on <b>Transactions</b>, newest first.</li>
+</ol>
+<table>
+  <tr><th style="width:33%">Part of the page</th><th>What it shows</th></tr>
+  <tr><td><b>Collected</b> card</td><td>All money received, split into online (Razorpay) and cash</td></tr>
+  <tr><td><b>Refunded</b> card</td><td>Money given back, the number of refund transactions, and the net amount kept</td></tr>
+  <tr><td><b>Successful payments</b> card</td><td>Payments currently paid in full, and how many failed</td></tr>
+  <tr><td><b>Cash on delivery due</b> card</td><td>Cash orders still to be collected, and the amount</td></tr>
+  <tr><td><b>Transactions / Refund history</b></td><td>Switch between the payment list and the refund log (section 4.4)</td></tr>
+  <tr><td>Search box</td><td>Order number, customer name or email, or Razorpay payment ID</td></tr>
+  <tr><td>Status buttons</td><td>All, Paid, COD due, Refunded, Failed, Any refund, Abandoned (not completed)</td></tr>
+  <tr><td><b>All methods</b> list</td><td>Online (Razorpay) or Cash on delivery only</td></tr>
+  <tr><td>Table: <b>Payment ID</b></td><td>ShopSphere's payment number (#20), Razorpay's payment ID (pay_…) or "Cash", and the date</td></tr>
+  <tr><td>Table: <b>Order &amp; customer</b></td><td>Order number, customer and the order's status</td></tr>
+  <tr><td>Table: <b>Method</b></td><td>Credit/debit card (network and last 4 digits), UPI, Net banking (bank), Wallet / PayPal, or Cash on delivery</td></tr>
+  <tr><td>Table: <b>Amount</b></td><td>Amount paid, and how much of it was refunded</td></tr>
+  <tr><td>Table: <b>Status</b></td><td>Paid, Collect on delivery, Failed (with the reason), Not completed, Refunded, Cancelled</td></tr>
+  <tr><td><b>Refund ₹…</b> button</td><td>Appears only on payments that can be refunded (section 4.3)</td></tr>
+</table>
+<figure><img src="screenshots/p03-payment-dashboard.png"><figcaption>Figure 4 — The Payment management dashboard: summary cards and each payment's ID, order, customer, method, amount and status.</figcaption></figure>
+<figure><img src="screenshots/p04-paid-filter.png"><figcaption>Figure 5 — The Paid filter: successful Razorpay payments with their Razorpay payment IDs and method (wallet — mobikwik).</figcaption></figure>
+
+<h3>4.3 Refund a payment (admin)</h3>
+<p>Refunds are mostly automatic: cancelling an order or approving a return refunds the money for those items straight away. The admin uses <b>Refund</b> for what is left, for example the delivery fee of a returned order, or to retry a refund that failed.</p>
+<ol>
+  <li>Find the payment (search by order number). The <b>Refund ₹…</b> button shows how much can still be refunded. It appears only when the payment was collected, money is left, and the order (or one of its items) was <b>cancelled or returned</b>.</li>
+  <li>Click <b>Refund ₹…</b>. The window shows what was paid, what was already refunded and what can still be refunded.</li>
+  <li>Enter the <b>refund amount</b> (at least ₹1, at most the amount left) and a <b>reason</b> (5–255 characters).</li>
+  <li>Click <b>Issue refund</b>. Online payments are refunded through Razorpay to the customer's original card, UPI, bank or wallet (usually 5–7 working days). Cash payments are recorded for the finance team to transfer by bank or UPI.</li>
+  <li>A message confirms: <i>Refund of ₹… issued for order ….</i> The customer is notified and the refund appears in <b>Refund history</b>.</li>
+</ol>
+<figure><img src="screenshots/p05-returned-order-payment.png"><figcaption>Figure 6 — Payment #20 of a returned order: ₹388.15 paid in cash, ₹339.15 already refunded automatically when the return was approved, so Refund ₹49 (the delivery fee) is offered.</figcaption></figure>
+<figure><img src="screenshots/p06-refund-form.png"><figcaption>Figure 7 — The refund window: paid, already refunded, can still be refunded, amount, reason and a warning that refunds cannot be undone.</figcaption></figure>
+<figure><img src="screenshots/p07-refund-issued.png"><figcaption>Figure 8 — After Issue refund: the payment is Refunded (₹388.15) and the Refunded card went up by ₹49.</figcaption></figure>
+
+<h3>4.4 Refund history (refund log)</h3>
+<p>Click <b>Refund history</b> to see every refund transaction, newest first: refund ID, payment and order, amount, how it was paid back (Razorpay to the original method, or a manual bank/UPI transfer for cash orders, with Razorpay's refund ID), the reason, who issued it ("System" for automatic refunds, otherwise the admin's name) and whether it was <b>Processed</b> or <b>Failed</b>. Failed attempts stay in the log so nothing goes missing.</p>
+<figure><img src="screenshots/p08-refund-history.png"><figcaption>Figure 9 — The refund log: the admin's ₹49 refund (R-5), the automatic refund when the return was approved (R-4), and two earlier Razorpay refunds.</figcaption></figure>
+
+<h3>4.5 Rules and messages</h3>
+<table>
+  <tr><th style="width:31%">Situation</th><th style="width:39%">Message shown</th><th>What to do</th></tr>
+  <tr><td>Refund for an order that was not cancelled or returned</td><td><i>Refunds can be issued only for cancelled or returned orders.</i></td><td>Cancel the order or approve the return first</td></tr>
+  <tr><td>Refund more than is left</td><td><i>You can refund at most ₹….</i></td><td>Lower the amount</td></tr>
+  <tr><td>Payment not collected (failed, not completed, cash still due)</td><td><i>This payment has no collected amount left to refund.</i></td><td>Nothing to refund</td></tr>
+  <tr><td>Amount below ₹1 or more than 2 decimals</td><td><i>Refund amount must be at least ₹1</i> / <i>Use at most 2 decimal places</i></td><td>Correct the amount</td></tr>
+  <tr><td>Reason missing or too short</td><td><i>Give a reason of at least 5 characters</i></td><td>Explain the refund</td></tr>
+  <tr><td>Razorpay cannot process the refund</td><td><i>Razorpay could not process the refund. It is logged as failed …</i></td><td>Try again later or refund from the Razorpay dashboard</td></tr>
+  <tr><td>Payment signature does not match</td><td><i>We could not verify this payment. If money was debited, it will be refunded by Razorpay.</i></td><td>The order is not placed; the customer tries again</td></tr>
+  <tr><td>Customer closes the Razorpay window</td><td>Payment shown as <i>Failed — Customer closed the payment window</i></td><td>The customer can pay again from checkout</td></tr>
+  <tr><td>A customer or seller calls an admin payment API</td><td>HTTP 403 — <i>You do not have permission to access this resource</i></td><td>Only admins see all payments</td></tr>
+</table>
+
+<h3>4.6 Security</h3>
+<ul>
+  <li><b>No card data on ShopSphere:</b> customers type card, UPI or bank details only in Razorpay's window. ShopSphere stores Razorpay's references (order_…, pay_…, rfnd_…) and a masked description such as "Visa ···· 1111".</li>
+  <li><b>Signature check:</b> a payment is accepted only if Razorpay's HMAC-SHA256 signature matches, so a browser cannot fake a successful payment.</li>
+  <li><b>Server-side prices:</b> the amount is worked out on the server from the database; the browser never sends a price.</li>
+  <li><b>Webhook:</b> Razorpay's server-to-server webhook (signed with a separate secret) completes the order even if the customer closes the browser. Paying twice or verifying twice never charges or deducts stock twice.</li>
+</ul>
+
+<h3>4.7 Frequently asked questions</h3>
+<p><b>Why Razorpay instead of Stripe or PayPal?</b> ShopSphere sells in India in rupees. Razorpay is the Indian payment gateway that offers cards, UPI, net banking and wallets (including PayPal) in one window, the same role Stripe plays elsewhere.</p>
+<p><b>When does the customer get the money back?</b> Razorpay refunds usually reach the card, bank or wallet in 5–7 working days. Cash refunds are paid by the finance team.</p>
+<p><b>Can a refund be cancelled?</b> No. That is why the refund window warns before issuing it and every refund is logged.</p>
+<p><b>Why are there "Not completed" payments?</b> The customer opened Razorpay's window but did not pay. No money moved; the order was never placed.</p>
+<p><b>Is this real money?</b> Not on the local and test setup: Razorpay runs in test mode, where test cards are accepted and nothing is charged.</p>
+
+<h2>5. Screenshots of the running application</h2>
+<p>Figures 1–9 were taken from the complete application running locally: the React frontend on <code>http://localhost:5173</code>, the Spring Boot backend on <code>http://localhost:8080</code>, the MySQL database <code>ecommerce_intern</code> and Razorpay in test mode. For the refund figures, the demo customer (Priya Sharma) placed a Cash on Delivery order for one book (SS261116-3F78CC, ₹388.15 including ₹49 delivery); it was delivered, she returned the damaged book, the return was approved (automatic refund of ₹339.15), and the admin then refunded the ₹49 delivery fee.</p>
+
+<h2 class="page-break">Appendix A: database tables</h2>
+<p>Payments are stored in the MySQL table <code>payments</code> (one row per payment attempt, linked to its order). Refund transactions are stored in <code>refunds</code>.</p>
+<table>
+  <tr><th style="width:18%">Assignment column</th><th style="width:19%">Assignment type</th><th style="width:31%">ShopSphere column and type</th><th>Meaning</th></tr>
+  <tr><td>payment_id</td><td>int (pk, auto_increment)</td><td><code>payment_id</code> BIGINT, primary key, auto increment</td><td>Unique identifier for each payment</td></tr>
+  <tr><td>order_id</td><td>int (fk)</td><td><code>order_id</code> BIGINT, foreign key → <code>orders.order_id</code></td><td>The order being paid for</td></tr>
+  <tr><td>amount</td><td>decimal(10,2)</td><td><code>amount</code> DECIMAL(12,2), with <code>currency</code> (INR)</td><td>Amount paid</td></tr>
+  <tr><td>payment_method</td><td>varchar(50)</td><td><code>method</code> VARCHAR(20): RAZORPAY or COD; <code>instrument</code> VARCHAR(20): CARD, UPI, NETBANKING, WALLET, PAYPAL, CASH …; <code>instrument_detail</code> VARCHAR(80), e.g. "Visa ···· 1111"</td><td>How the customer paid</td></tr>
+  <tr><td>payment_status</td><td>varchar(50)</td><td><code>status</code> VARCHAR(20): SUCCESS (paid), FAILED, REFUNDED, PENDING (cash due), CREATED (not completed), CANCELLED</td><td>Status of the payment</td></tr>
+  <tr><td>created_at</td><td>datetime</td><td><code>created_at</code> DATETIME(6)</td><td>When the payment was started</td></tr>
+  <tr><td>updated_at</td><td>datetime</td><td><code>updated_at</code> DATETIME(6)</td><td>When the payment was last updated</td></tr>
+</table>
+<p>Other <code>payments</code> columns: <code>razorpay_order_id</code>, <code>razorpay_payment_id</code> (gateway references), <code>refunded_amount</code> (running total of refunds), <code>failure_reason</code>.</p>
+<p><b>Table <code>refunds</code></b> (new): <code>refund_id</code> (pk), <code>payment_id</code> (fk → payments), <code>amount</code> DECIMAL(12,2), <code>mode</code> (RAZORPAY or MANUAL), <code>status</code> (PROCESSED or FAILED), <code>razorpay_refund_id</code>, <code>reason</code>, <code>initiated_by</code> ("System" or the admin's name), <code>created_at</code>, <code>updated_at</code>. Refunds made before the table existed were added to it once, so the log is complete.</p>
+
+<h2>Appendix B: SQL behind each action</h2>
+<p>The full, tested set is in <code>DataBase/queries.sql</code>, section 10.</p>
+<pre><span class="c">-- Payment dashboard: payment ID, order, amount, method and status</span>
+SELECT p.payment_id, o.order_number, u.full_name AS customer, p.amount,
+       p.method, p.instrument AS payment_method, p.instrument_detail,
+       CASE p.status WHEN 'SUCCESS' THEN 'Paid' ELSE p.status END AS payment_status,
+       p.refunded_amount, p.razorpay_payment_id, p.created_at
+FROM payments p
+JOIN orders o ON o.order_id = p.order_id
+JOIN users u  ON u.user_id  = o.customer_id
+ORDER BY p.created_at DESC LIMIT 10;
+
+<span class="c">-- Summary: collected, refunded, net</span>
+SELECT SUM(CASE WHEN status IN ('SUCCESS','REFUNDED') THEN amount ELSE 0 END) AS collected,
+       SUM(refunded_amount) AS refunded
+FROM payments;
+
+<span class="c">-- Payments that can be refunded (paid, money left, order cancelled or returned)</span>
+SELECT p.payment_id, o.order_number, p.amount - p.refunded_amount AS refundable
+FROM payments p JOIN orders o ON o.order_id = p.order_id
+WHERE p.status = 'SUCCESS' AND p.amount &gt; p.refunded_amount
+  AND o.status IN ('CANCELLED','RETURN_REQUESTED','RETURNED','REFUNDED');
+
+<span class="c">-- Issue a refund of ₹49 on payment 20 (Razorpay's API is called first for online payments)</span>
+INSERT INTO refunds (payment_id, amount, mode, status, reason, initiated_by, created_at, updated_at)
+VALUES (20, 49.00, 'MANUAL', 'PROCESSED', 'Delivery fee refunded for the returned (damaged) book',
+        'ShopSphere Admin', NOW(6), NOW(6));
+UPDATE payments
+SET refunded_amount = refunded_amount + 49.00,
+    status = IF(refunded_amount + 49.00 &gt;= amount, 'REFUNDED', status), updated_at = NOW(6)
+WHERE payment_id = 20;
+
+<span class="c">-- Refund log</span>
+SELECT r.refund_id, r.payment_id, o.order_number, r.amount, r.mode, r.status, r.reason, r.initiated_by
+FROM refunds r JOIN payments p ON p.payment_id = r.payment_id JOIN orders o ON o.order_id = p.order_id
+ORDER BY r.created_at DESC;</pre>
+
+<h2>Appendix C: API endpoints of the module</h2>
+<table>
+  <tr><th style="width:9%">Method</th><th style="width:36%">Path</th><th>Purpose</th></tr>
+  <tr><td>POST</td><td><code>/customer/checkout</code></td><td>Customer: price the cart on the server and create the Razorpay order (or place a COD order)</td></tr>
+  <tr><td>POST</td><td><code>/customer/payments/verify</code></td><td>Customer: check Razorpay's signature, record the method, place the order</td></tr>
+  <tr><td>POST</td><td><code>/customer/payments/failed</code></td><td>Customer: record a failed or closed payment</td></tr>
+  <tr><td>GET</td><td><code>/customer/payments</code></td><td>Customer: own payment history</td></tr>
+  <tr><td>POST</td><td><code>/payments/webhook</code></td><td>Razorpay: <code>payment.captured</code> / <code>payment.failed</code>, signed with the webhook secret</td></tr>
+  <tr><td>GET</td><td><code>/admin/payments?status=&amp;refundedOnly=&amp;method=&amp;search=&amp;page=&amp;size=</code></td><td>Admin: payment dashboard</td></tr>
+  <tr><td>GET</td><td><code>/admin/payments/summary</code></td><td>Admin: collected, refunded, net, counts, cash due</td></tr>
+  <tr><td>POST</td><td><code>/admin/payments/{id}/refund</code></td><td>Admin: refund <code>{ "amount": 49.00, "reason": "…" }</code> (cancelled or returned orders only)</td></tr>
+  <tr><td>GET</td><td><code>/admin/refunds</code>, <code>/admin/payments/{id}/refunds</code></td><td>Admin: refund log, refunds of one payment</td></tr>
+</table>
+<p><b>Tests:</b> <code>PaymentManagementTest</code> checks that Razorpay methods map to card, UPI, net banking, wallet and PayPal; that card numbers and UPI IDs are masked; that every Razorpay refund is logged with its refund ID; that a failed gateway refund is logged as failed and not counted; that an admin can refund the rest of a returned cash order; that refunds are refused for orders that were not cancelled or returned; and that no more than was paid can be refunded. <code>CheckoutServiceImplTest</code> covers signature checks, verifying twice, and the automatic refund when an item sells out during payment.</p>
+
+</body>
+</html>

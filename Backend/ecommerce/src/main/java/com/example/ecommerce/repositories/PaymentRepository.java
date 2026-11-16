@@ -1,6 +1,7 @@
 package com.example.ecommerce.repositories;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -37,6 +38,45 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     BigDecimal sumRefunded();
 
     long countByStatus(PaymentStatus status);
+
+    /** Online payments whose payment method has not been recorded yet. */
+    List<Payment> findByInstrumentIsNullAndRazorpayPaymentIdIsNotNull();
+
+    @Query("select coalesce(sum(p.amount), 0) from Payment p where p.method = :method and p.status = :status")
+    BigDecimal sumAmountByMethodAndStatus(@Param("method") com.example.ecommerce.enums.PaymentMethod method,
+                                          @Param("status") PaymentStatus status);
+
+    /**
+     * Payment dashboard. status / refundedOnly / method filter, search matches the order number,
+     * customer name or email, and the Razorpay payment id.
+     */
+    @EntityGraph(attributePaths = {"order", "order.customer"})
+    @Query(value = """
+            select p from Payment p
+            where (:status is null or p.status = :status)
+              and (:refundedOnly = false or p.refundedAmount > 0)
+              and (:method is null or p.method = :method)
+              and (:search is null
+                   or lower(p.order.orderNumber) like lower(concat('%', :search, '%'))
+                   or lower(p.order.customer.fullName) like lower(concat('%', :search, '%'))
+                   or lower(p.order.customer.email) like lower(concat('%', :search, '%'))
+                   or lower(p.razorpayPaymentId) like lower(concat('%', :search, '%')))
+            order by p.createdAt desc
+            """,
+            countQuery = """
+            select count(p) from Payment p
+            where (:status is null or p.status = :status)
+              and (:refundedOnly = false or p.refundedAmount > 0)
+              and (:method is null or p.method = :method)
+              and (:search is null
+                   or lower(p.order.orderNumber) like lower(concat('%', :search, '%'))
+                   or lower(p.order.customer.fullName) like lower(concat('%', :search, '%'))
+                   or lower(p.order.customer.email) like lower(concat('%', :search, '%'))
+                   or lower(p.razorpayPaymentId) like lower(concat('%', :search, '%')))
+            """)
+    Page<Payment> dashboard(@Param("status") PaymentStatus status, @Param("refundedOnly") boolean refundedOnly,
+                            @Param("method") com.example.ecommerce.enums.PaymentMethod method,
+                            @Param("search") String search, Pageable pageable);
 
     /** Payment history for one customer, hiding abandoned checkout attempts that never got a payment. */
     @EntityGraph(attributePaths = {"order"})

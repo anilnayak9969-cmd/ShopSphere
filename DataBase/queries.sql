@@ -640,3 +640,88 @@ UPDATE users SET active = b'1', updated_at = NOW(6) WHERE user_id = @customer AN
 DELETE FROM users
 WHERE user_id = @customer
   AND user_id NOT IN (SELECT customer_id FROM (SELECT customer_id FROM orders) AS used);
+-- =====================================================================
+-- 10. PAYMENT MANAGEMENT MODULE (assignment)
+--    Assignment column  ->  ShopSphere column
+--    payment_id         ->  payment_id (pk)          order_id -> order_id (fk -> orders)
+--    amount             ->  amount DECIMAL(12,2)
+--    payment_method     ->  method (RAZORPAY | COD) + instrument (CARD, UPI, NETBANKING, WALLET, PAYPAL, CASH)
+--    payment_status     ->  status (CREATED, PENDING, SUCCESS = paid, FAILED, REFUNDED, CANCELLED)
+--    Refund transactions are logged in the refunds table.
+-- =====================================================================
+
+-- 10.1 Payment dashboard: payment ID, order, amount, method and status
+SELECT p.payment_id,
+       o.order_number,
+       u.full_name                                                AS customer,
+       p.amount,
+       p.method,
+       COALESCE(p.instrument, '-')                                AS payment_method,
+       p.instrument_detail,
+       CASE p.status WHEN 'SUCCESS' THEN 'Paid' ELSE p.status END AS payment_status,
+       p.refunded_amount,
+       p.razorpay_payment_id,
+       p.created_at,
+       p.updated_at
+FROM payments p
+JOIN orders o ON o.order_id = p.order_id
+JOIN users u  ON u.user_id  = o.customer_id
+ORDER BY p.created_at DESC
+LIMIT 10 OFFSET 0;
+
+-- 10.2 Summary cards: collected, refunded, net, cash on delivery still due
+SELECT SUM(CASE WHEN status IN ('SUCCESS','REFUNDED') THEN amount ELSE 0 END)                    AS collected,
+       SUM(refunded_amount)                                                                     AS refunded,
+       SUM(CASE WHEN status IN ('SUCCESS','REFUNDED') THEN amount ELSE 0 END) - SUM(refunded_amount) AS net,
+       SUM(status = 'SUCCESS')                                                                  AS successful,
+       SUM(status = 'FAILED')                                                                   AS failed,
+       SUM(CASE WHEN method = 'COD' AND status = 'PENDING' THEN amount ELSE 0 END)              AS cod_due
+FROM payments;
+
+-- 10.3 Payments by method (card, UPI, net banking, wallet, PayPal, cash)
+SELECT COALESCE(instrument, 'NOT_COMPLETED') AS payment_method, COUNT(*) AS payments, SUM(amount) AS amount
+FROM payments
+GROUP BY instrument;
+
+-- 10.4 Payments that can be refunded: paid, money left, order cancelled or returned
+SELECT p.payment_id, o.order_number, o.status AS order_status, p.amount, p.refunded_amount,
+       p.amount - p.refunded_amount AS refundable
+FROM payments p
+JOIN orders o ON o.order_id = p.order_id
+WHERE p.status = 'SUCCESS'
+  AND p.amount > p.refunded_amount
+  AND (o.status IN ('CANCELLED','RETURN_REQUESTED','RETURNED','REFUNDED')
+       OR EXISTS (SELECT 1 FROM order_items i
+                  WHERE i.order_id = o.order_id
+                    AND i.item_status IN ('CANCELLED','RETURN_REQUESTED','RETURNED','REFUNDED')));
+
+-- 10.5 Issue a refund (the app calls Razorpay's refund API for online payments first)
+SET @payment := (SELECT p.payment_id FROM payments p JOIN orders o ON o.order_id = p.order_id
+                 WHERE p.status = 'SUCCESS' AND p.amount > p.refunded_amount
+                   AND o.status IN ('CANCELLED','RETURNED','REFUNDED') LIMIT 1);
+SET @refund_amount := 10.00;
+INSERT INTO refunds (payment_id, amount, mode, status, reason, initiated_by, created_at, updated_at)
+SELECT payment_id, @refund_amount, IF(method = 'COD', 'MANUAL', 'RAZORPAY'), 'PROCESSED',
+       'SQL example refund', 'ShopSphere Admin', NOW(6), NOW(6)
+FROM payments WHERE payment_id = @payment;
+UPDATE payments
+SET refunded_amount = refunded_amount + @refund_amount,
+    status          = IF(refunded_amount + @refund_amount >= amount, 'REFUNDED', status),
+    updated_at      = NOW(6)
+WHERE payment_id = @payment;
+
+-- 10.6 Refund log (shown on the dashboard)
+SELECT r.refund_id, p.payment_id, o.order_number, r.amount, r.mode, r.status, r.reason,
+       r.initiated_by, r.razorpay_refund_id, r.created_at
+FROM refunds r
+JOIN payments p ON p.payment_id = r.payment_id
+JOIN orders o   ON o.order_id   = p.order_id
+ORDER BY r.created_at DESC;
+
+-- Undo the example refund above (it was only for illustration)
+UPDATE payments
+SET refunded_amount = refunded_amount - @refund_amount,
+    status          = IF(status = 'REFUNDED' AND refunded_amount - @refund_amount < amount, 'SUCCESS', status)
+WHERE payment_id = @payment
+  AND EXISTS (SELECT 1 FROM refunds WHERE payment_id = @payment AND reason = 'SQL example refund');
+DELETE FROM refunds WHERE payment_id = @payment AND reason = 'SQL example refund';
