@@ -137,7 +137,8 @@ export default function OrderDetails() {
   if (!order) return <PageLoader label="Loading order…" />
 
   const activeItems = order.items.filter((i) => !['CANCELLED', 'RETURNED', 'REFUNDED'].includes(i.itemStatus))
-  const canCancel = activeItems.length > 0 && activeItems.every((i) => ['PLACED', 'CONFIRMED'].includes(i.itemStatus))
+  // An order can be cancelled until any of its items has been shipped.
+  const canCancel = activeItems.length > 0 && activeItems.every((i) => ['PLACED', 'CONFIRMED', 'PROCESSING', 'PACKED'].includes(i.itemStatus))
 
   const cancel = async () => {
     setBusy(true)
@@ -319,6 +320,12 @@ export default function OrderDetails() {
               <span>Total</span>
               <span>{formatPrice(order.totalAmount)}</span>
             </div>
+            {Number(order.taxAmount) > 0 && (
+              <div className="ss-summary-row small text-muted">
+                <span>Includes GST (18%)</span>
+                <span>{formatPrice(order.taxAmount)}</span>
+              </div>
+            )}
             <div className="d-flex justify-content-between align-items-center mt-3 small">
               <span className="text-muted">{order.paymentMethod === 'COD' ? 'Cash on Delivery' : 'Paid online (Razorpay)'}</span>
               <StatusBadge status={order.paymentStatus} label={order.paymentStatus === 'PENDING' ? 'Pay on delivery' : undefined} />

@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ShopSphere — Order Management Module</title>
+<style>
+  @page { size: A4; margin: 18mm 17mm 20mm 17mm; }
+  :root { --navy: #14213d; --blue: #2563eb; --ink: #1f2937; --muted: #6b7280; --line: #cfd6e0; --head: #eef1f5; --warn: #fff7e6; --warn-line: #f59e0b; --ok: #e8f6ee; --ok-ink: #137a3e; }
+  * { box-sizing: border-box; }
+  body { font-family: Calibri, "Segoe UI", Arial, sans-serif; color: var(--ink); font-size: 10.6pt; line-height: 1.42; margin: 0; }
+  h1 { font-size: 23pt; color: var(--navy); margin: 0 0 2pt; letter-spacing: -0.2pt; }
+  .subtitle { font-size: 14pt; color: var(--muted); margin: 0 0 4pt; }
+  .byline { color: var(--muted); margin-bottom: 14pt; }
+  h2 { font-size: 15.5pt; color: var(--navy); margin: 18pt 0 6pt; page-break-after: avoid; }
+  h3 { font-size: 12.3pt; color: var(--blue); margin: 14pt 0 5pt; page-break-after: avoid; }
+  p { margin: 0 0 7pt; }
+  ul, ol { margin: 0 0 8pt; padding-left: 20pt; }
+  li { margin-bottom: 2.5pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 10pt; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  th, td { border: 1px solid var(--line); padding: 5pt 7pt; text-align: left; vertical-align: top; }
+  th { background: var(--head); font-weight: 700; }
+  code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 9.2pt; }
+  pre { background: #f2f4f7; padding: 7pt 9pt; font-family: Consolas, monospace; font-size: 8.5pt; line-height: 1.35; white-space: pre-wrap; margin: 4pt 0 10pt; }
+  pre .c { color: #6b7280; }
+  .note { background: var(--warn); border-left: 4pt solid var(--warn-line); padding: 6pt 9pt; margin: 6pt 0 10pt; }
+  .done { background: var(--ok); color: var(--ok-ink); font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; white-space: nowrap; font-size: 9.5pt; }
+  .new { background: #e8f0fe; color: #1d4ed8; font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; white-space: nowrap; font-size: 8.5pt; }
+  figure { margin: 8pt 0 12pt; text-align: center; page-break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid var(--line); }
+  figcaption { font-style: italic; color: #4b5563; font-size: 9.6pt; margin-top: 4pt; }
+  .page-break { page-break-before: always; }
+  .small { font-size: 9.5pt; color: var(--muted); }
+  a { color: var(--blue); }
+</style>
+</head>
+<body>
+
+<h1>ShopSphere — Order Management Module</h1>
+<div class="subtitle">Assignment submission and end user documentation</div>
+<div class="byline">Anil Nayak · 16 November 2026</div>
+
+<h2>Submission details</h2>
+<p>This document submits the Order Management module of ShopSphere, a multi-vendor e-commerce website, with its code repository, hosted link, requirement checklist and user guide.</p>
+<table>
+  <tr><th style="width:32%">Item</th><th>Details</th></tr>
+  <tr><td>Candidate</td><td>Anil Nayak</td></tr>
+  <tr><td>Internship</td><td>ITVedant / Vibgyor Advisors integrated internship</td></tr>
+  <tr><td>Project</td><td>ShopSphere — multi-vendor e-commerce platform</td></tr>
+  <tr><td>Module</td><td>Order Management (customer checkout and Admin console)</td></tr>
+  <tr><td>Frontend</td><td>React 19, Vite, React Router, Bootstrap 5</td></tr>
+  <tr><td>Backend</td><td>Java 17, Spring Boot 4, Spring Security (JWT), Spring Data JPA</td></tr>
+  <tr><td>Database</td><td>MySQL (database <code>ecommerce_intern</code>, tables <code>orders</code> and <code>order_items</code>)</td></tr>
+</table>
+
+<h2>1. GitHub repository link</h2>
+<p><b>Repository:</b> <a href="https://github.com/anilnayak9969-cmd/ShopSphere">https://github.com/anilnayak9969-cmd/ShopSphere</a></p>
+<p>The repository holds the complete project. Secret settings (database password, JWT secret, email and Razorpay keys, admin access code) are not committed; an example settings file shows what to fill in.</p>
+<table>
+  <tr><th style="width:32%">Folder</th><th>Contents</th></tr>
+  <tr><td><code>Backend/ecommerce</code></td><td>Spring Boot API. The module's code is <code>CheckoutServiceImpl</code> (place an order), <code>OrderServiceImpl</code> (dashboard, status updates, cancel), <code>PricingPolicy</code> (totals, shipping, GST), the order endpoints in <code>AdminController</code> and <code>CustomerController</code>, the <code>CustomerOrder</code> and <code>OrderItem</code> entities, <code>OrderStatus</code> and <code>OrderStatusGroup</code>. Tests: <code>OrderManagementTest</code>, <code>CheckoutServiceImplTest</code>, <code>OrderRulesTest</code>.</td></tr>
+  <tr><td><code>Frontend/ecommerce</code></td><td>React website. Customers use <code>src/pages/Cart.jsx</code>, <code>Checkout.jsx</code> and <code>customer/OrderDetails.jsx</code>; the admin screen is <code>src/pages/admin/AdminOrders.jsx</code>.</td></tr>
+  <tr><td><code>DataBase</code></td><td><code>queries.sql</code> (section 8: Order Management SQL)</td></tr>
+  <tr><td><code>Docs/OrderManagement</code></td><td>This document, its screenshots and the module README</td></tr>
+  <tr><td><code>README.md</code></td><td>Setup steps, features and API reference</td></tr>
+</table>
+
+<h2>2. URL of the module hosted on a free server</h2>
+<p><b>Website:</b> <a href="https://host-shop-sphere.vercel.app/">https://host-shop-sphere.vercel.app/</a></p>
+<p>To try the module, sign in with the admin account below and open <b>Admin console → Orders</b>. Customers place and cancel orders from <b>Cart</b> and <b>My Orders</b>.</p>
+<table>
+  <tr><th style="width:50%">Login</th><th>Value</th></tr>
+  <tr><td>Admin email</td><td>admin@shopsphere.com</td></tr>
+  <tr><td>Admin password</td><td><i>(shared separately with the evaluator)</i></td></tr>
+</table>
+<div class="note"><b>Hosting status:</b> only the React frontend is deployed on Vercel. The Spring Boot backend and the MySQL database are not online yet, so the hosted site cannot sign in or load orders. The new Order Management screens appear on the hosted site after the latest code is pushed and redeployed. All screenshots in this document were taken from the complete application running locally with its backend and database.</div>
+
+<h2>3. Requirement checklist — is the module implemented?</h2>
+<p>Every functionality in the assignment is implemented and was tested in the running application. Most of the order flow already existed in ShopSphere; the items marked <span class="new">ADDED</span> were built for this assignment.</p>
+<table>
+  <tr><th style="width:25%">Requirement</th><th>How ShopSphere implements it</th><th style="width:14%">Status</th></tr>
+  <tr><td><b>1. Place an order</b><br>Customers select products and add them to the cart; the total includes taxes and shipping</td><td>Customers add products to the <b>Cart</b> and check out in four steps (Address → Review → Payment → Confirmation), paying online (Razorpay) or Cash on Delivery. The server prices every item from the database and works out the total = items − coupon + shipping (₹49 below ₹499, free above). Prices include GST; the order now stores and shows the <b>GST included (18%)</b> <span class="new">ADDED</span>.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>2. Order dashboard</b><br>All orders, filters Pending / Shipped / Delivered / Cancelled; order ID, customer name, shipping address, status</td><td><b>Order management</b> page: summary cards, <b>Pending / Shipped / Delivered / Cancelled / Returns</b> filter tabs <span class="new">ADDED</span>, a <b>Shipping address</b> column <span class="new">ADDED</span>, order ID, customer name and email, total, payment and status, plus search by order ID, customer name, email or city and pagination.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>3. Update order status</b><br>e.g. from Pending to Shipped</td><td><b>View / update</b> → <b>Move to</b> → <b>Update status</b>. The admin can now jump straight from Pending to Shipped <span class="new">ADDED</span>; Confirmed and Packed are recorded automatically in the tracking history, and the customer is notified.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>4. Cancel order</b><br>Customers and admins, only if not shipped; soft delete by setting the status to Cancelled</td><td>Customers: <b>Cancel order</b> on the order page, now allowed until the order is shipped <span class="new">ADDED</span> (before: only until packed). Admins: <b>Cancel</b> button with a warning <span class="new">ADDED</span>. Cancelling sets the status to <b>CANCELLED</b> and <code>active</code> to false; the row is kept, stock goes back and online payments are refunded.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>Database design</b><br>Table <code>orders</code></td><td>All assignment columns exist; the Boolean <code>status</code> (true = active, false = cancelled) was added as <code>orders.active</code> <span class="new">ADDED</span>, plus <code>tax_amount</code>. See Appendix A.</td><td><span class="done">Implemented</span></td></tr>
+</table>
+
+<h2>4. End user documentation — Order Management</h2>
+<p>Order Management takes an order from the customer's cart to their door. Customers place, track and cancel orders; the ShopSphere administrator watches every order, moves it through its statuses and steps in when something goes wrong.</p>
+<p><b>Order statuses.</b> An order is <b>Pending</b> after it is placed (shown as <i>Placed</i>, then <i>Confirmed</i> and <i>Packed</i> while the seller prepares it), <b>Shipped</b> when it leaves the seller (then <i>Out for delivery</i>), and <b>Delivered</b> when the customer receives it. It becomes <b>Cancelled</b> if the customer or admin cancels it before it ships. Each item of an order also has its own status, because one order can contain products from different sellers.</p>
+<p><b>Who uses it:</b> customers place and cancel their own orders; only users with the <b>Admin</b> role see all orders and change their status. Sellers confirm and pack their own items; delivery partners record pickup and delivery.</p>
+
+<h3>4.1 Place an order (customer)</h3>
+<ol>
+  <li>Open a product and click <b>Add to cart</b>. Repeat for every product you want.</li>
+  <li>Open <b>Cart</b> (top right). Change quantities or remove items; the cart shows the items total, delivery fee and amount to pay.</li>
+  <li>Click <b>Proceed to checkout</b>.</li>
+  <li><b>Address:</b> choose a saved address or enter a new one, then click <b>Deliver here</b>.</li>
+  <li><b>Review:</b> check the items and, optionally, apply a coupon. Click <b>Continue to payment</b>.</li>
+  <li><b>Payment:</b> choose <b>Pay online</b> (Razorpay) or <b>Cash on Delivery</b>, then click <b>Place order</b>.</li>
+  <li><b>Confirmation:</b> the order number appears and an email confirmation is sent. The order is now <b>Pending</b>.</li>
+</ol>
+<table>
+  <tr><th style="width:30%">Price details line</th><th>How it is worked out</th></tr>
+  <tr><td>Items</td><td>Each product's price (after the seller's discount) × quantity, always taken from the database, never from the browser</td></tr>
+  <tr><td>Coupon</td><td>Optional discount, checked again on the server</td></tr>
+  <tr><td>Delivery</td><td>₹49 for orders below ₹499, free from ₹499 (both set by the admin in Settings)</td></tr>
+  <tr><td>Total payable</td><td>Items − coupon + delivery</td></tr>
+  <tr><td>Includes GST (18%)</td><td>Prices are GST-inclusive, so tax is not added again. The GST inside the price is (items − coupon) × 18 ÷ 118, shown on the checkout, the order page and the admin screen, and saved in <code>orders.tax_amount</code></td></tr>
+</table>
+<figure><img src="screenshots/o01-cart.png"><figcaption>Figure 1 — The cart with two products: the Nordic Dome Pendant Light and two paperbacks.</figcaption></figure>
+<figure><img src="screenshots/o03-checkout-payment.png"><figcaption>Figure 2 — Checkout, Payment step: Cash on Delivery selected. Price details show items ₹2,821.52, free delivery, total ₹2,821.52 including ₹430.40 GST.</figcaption></figure>
+<figure><img src="screenshots/o04-order-confirmation.png"><figcaption>Figure 3 — Order confirmed: order number SS261116-ZAD6GJ, status Placed (pending), pay on delivery.</figcaption></figure>
+
+<h3>4.2 The order dashboard (admin)</h3>
+<ol>
+  <li>Sign in with the admin account and click <b>Orders</b> in the left menu.</li>
+  <li>The <b>Order management</b> page opens with the summary cards and every order, newest first.</li>
+</ol>
+<table>
+  <tr><th style="width:33%">Part of the page</th><th>What it shows</th></tr>
+  <tr><td><b>Total orders</b> card</td><td>All placed orders (unpaid online checkouts are not counted)</td></tr>
+  <tr><td><b>Pending</b> card</td><td>Orders not shipped yet (placed, confirmed or packed)</td></tr>
+  <tr><td><b>Shipped</b> card</td><td>Orders on the way (shipped or out for delivery)</td></tr>
+  <tr><td><b>Delivered</b> card</td><td>Orders the customer has received</td></tr>
+  <tr><td><b>Cancelled</b> card</td><td>Cancelled orders (soft deleted, kept for history)</td></tr>
+  <tr><td><b>All orders / Pending / Shipped / Delivered / Cancelled / Returns</b></td><td>Show only orders in that group</td></tr>
+  <tr><td>Search box</td><td>Order ID, customer name, email or city</td></tr>
+  <tr><td><b>Any exact status</b> list</td><td>Narrow to one detailed status, e.g. Packed or Out for delivery</td></tr>
+  <tr><td>Table: <b>Order ID</b></td><td>Order number and the date and time it was placed</td></tr>
+  <tr><td>Table: <b>Customer</b></td><td>Customer name and email</td></tr>
+  <tr><td>Table: <b>Shipping address</b></td><td>Recipient, address, city, state and PIN code</td></tr>
+  <tr><td>Table: <b>Total &amp; payment</b></td><td>Order total, number of items, and payment, e.g. "COD · due on delivery" or "Razorpay · paid"</td></tr>
+  <tr><td>Table: <b>Status</b></td><td>Pending, Confirmed, Packed, Shipped, Out for delivery, Delivered, Cancelled, Return requested …</td></tr>
+  <tr><td><b>View / update</b> and <b>Cancel</b></td><td>Open the order to see its details and change its status (section 4.3); cancel an order that has not shipped (section 4.5)</td></tr>
+</table>
+<figure><img src="screenshots/o08-order-dashboard.png"><figcaption>Figure 4 — The Order management dashboard: summary cards, status filters, and each order's ID, customer, shipping address, total, payment and status.</figcaption></figure>
+<figure><img src="screenshots/o09-pending-filter.png"><figcaption>Figure 5 — The Pending filter: only orders that have not shipped yet, each with View / update and Cancel.</figcaption></figure>
+
+<h3>4.3 Update the order status (admin)</h3>
+<ol>
+  <li>Click <b>View / update</b> in the order's row. The order window shows its items (with each item's status and tracking), the totals with GST, the shipping address and the customer.</li>
+  <li>Under <b>Update order status</b>, choose the new status in <b>Move to</b>, for example <b>Shipped</b>.</li>
+  <li>Optionally type a <b>Note for customer</b>.</li>
+  <li>Click <b>Update status</b>. A message confirms: <i>Order … is now Shipped.</i> The customer gets a notification and sees the new status and tracking number.</li>
+</ol>
+<p>Statuses only move forward: Pending (Placed) → Confirmed → Packed → Shipped → Out for delivery → Delivered. The admin may skip steps, for example Pending → Shipped; the skipped steps are recorded automatically in the tracking history. When an order is shipped without a courier, ShopSphere Delivery is used with tracking number <code>SSD-&lt;item&gt;</code>. Cash on Delivery orders are marked paid when they are delivered.</p>
+<figure><img src="screenshots/o10-order-details.png"><figcaption>Figure 6 — The order window: items, totals including GST, shipping address, customer and the Update order status form.</figcaption></figure>
+<figure><img src="screenshots/o11-update-to-shipped.png"><figcaption>Figure 7 — Moving a pending order straight to Shipped, with a note for the customer. The steps in between are recorded automatically.</figcaption></figure>
+<figure><img src="screenshots/o12-order-shipped.png"><figcaption>Figure 8 — After Update status: the order and both items are Shipped with ShopSphere Delivery tracking numbers, and the success message confirms it.</figcaption></figure>
+<figure><img src="screenshots/o13-shipped-filter.png"><figcaption>Figure 9 — The Shipped filter lists the orders on the way.</figcaption></figure>
+<figure><img src="screenshots/o17-customer-shipped.png"><figcaption>Figure 10 — What the customer sees: the order is Shipped, the progress bar is up to date, and the tracking history lists Order placed → Confirmed → Packed → Shipped.</figcaption></figure>
+
+<h3>4.4 Cancel an order (customer)</h3>
+<ol>
+  <li>Open <b>My Orders</b> and click the order.</li>
+  <li>While nothing has been shipped, a <b>Cancel order</b> button appears at the top right. Click it.</li>
+  <li>The window explains that all items go back into stock and that online payments are refunded (nothing is charged for Cash on Delivery). Click <b>Yes, cancel order</b>.</li>
+  <li>The order shows <b>Cancelled</b> with the note <i>Cancelled by customer</i>. The sellers are notified.</li>
+</ol>
+<p>Once any item has been shipped, the button disappears; the customer can return the item after delivery instead.</p>
+<figure><img src="screenshots/o05-customer-order.png"><figcaption>Figure 11 — A pending order on the customer's order page, with the Cancel order button. The ₹49 delivery fee applies because the order is below ₹499.</figcaption></figure>
+<figure><img src="screenshots/o06-customer-cancel-dialog.png"><figcaption>Figure 12 — The customer confirms the cancellation.</figcaption></figure>
+<figure><img src="screenshots/o07-customer-cancelled.png"><figcaption>Figure 13 — The order is Cancelled ("Cancelled by customer"); it stays in the customer's order history.</figcaption></figure>
+
+<h3>4.5 Cancel an order (admin)</h3>
+<ol>
+  <li>Find the order (the <b>Pending</b> filter lists every order that can still be cancelled) and click <b>Cancel</b> in its row, or <b>Cancel order</b> inside the order window.</li>
+  <li>A warning window opens: the status becomes <b>Cancelled</b>, every item goes back into stock, online payments are refunded through Razorpay, the customer and sellers are notified, and the order is kept (soft delete) and cannot be reopened.</li>
+  <li>Click <b>Cancel order</b> to confirm. A message confirms: <i>Order … has been cancelled.</i></li>
+</ol>
+<figure><img src="screenshots/o14-admin-cancel-warning.png"><figcaption>Figure 14 — The warning shown before an admin cancels an order.</figcaption></figure>
+<figure><img src="screenshots/o15-cancelled-filter.png"><figcaption>Figure 15 — The Cancelled filter: cancelled orders stay in the database with status Cancelled (soft delete).</figcaption></figure>
+<figure><img src="screenshots/o16-delivered-filter.png"><figcaption>Figure 16 — The Delivered filter: completed orders, all paid.</figcaption></figure>
+
+<h3>4.6 Rules and messages</h3>
+<table>
+  <tr><th style="width:31%">Situation</th><th style="width:39%">Message shown</th><th>What to do</th></tr>
+  <tr><td>A product sold out or changed while it was in the cart</td><td><i>… is no longer available in the requested quantity. Please review your cart.</i></td><td>Update the cart and check out again</td></tr>
+  <tr><td>Cash on Delivery above the COD limit</td><td><i>Available for orders up to ₹10,000.</i></td><td>Pay online or split the order</td></tr>
+  <tr><td>Customer cancels an order that has shipped</td><td><i>This order has already been shipped, so it can no longer be cancelled. You can return it after delivery.</i></td><td>Return the item after delivery</td></tr>
+  <tr><td>Admin cancels an order whose items have all shipped</td><td><i>No item of this order can be cancelled any more.</i></td><td>Use returns after delivery</td></tr>
+  <tr><td>Admin moves an order backwards (e.g. Shipped → Packed)</td><td><i>No item of this order can move from its current status to PACKED.</i></td><td>Statuses only move forward</td></tr>
+  <tr><td>Cancelled or delivered order</td><td>No further status changes are offered (only returns for delivered items)</td><td>—</td></tr>
+  <tr><td>A customer or seller calls an admin order API</td><td>HTTP 403 — <i>You do not have permission to access this resource</i></td><td>Only admins manage all orders</td></tr>
+</table>
+
+<h3>4.7 Frequently asked questions</h3>
+<p><b>Why is a cancelled order not deleted?</b> Payments, refunds, stock and reports point to it. Cancelling sets its status to Cancelled and <code>active</code> to false, so it is hidden from active work but the history stays correct.</p>
+<p><b>Why does the order say "Pending" on the dashboard but "Placed" elsewhere?</b> They are the same: Placed is ShopSphere's name for a new order, and the dashboard groups Placed, Confirmed and Packed as Pending (not shipped yet).</p>
+<p><b>Is GST added on top of the price?</b> No. Prices already include GST; the "Includes GST (18%)" line shows how much of the total is tax.</p>
+<p><b>Why does one order show items with different statuses?</b> Each seller ships their own items. The order's status follows its least advanced item, so it is Delivered only when every item is delivered.</p>
+<p><b>Is the customer told about status changes?</b> Yes: every change creates a notification, and the order page updates live.</p>
+<p><b>Can I reopen a cancelled order?</b> No. The stock has been returned and any payment refunded; the customer places a new order.</p>
+
+<h2>5. Screenshots of the running application</h2>
+<p>Figures 1–16 were taken from the complete application running locally: the React frontend on <code>http://localhost:5173</code>, the Spring Boot backend on <code>http://localhost:8080</code> and the MySQL database <code>ecommerce_intern</code>. The demo customer (Priya Sharma) placed the orders with Cash on Delivery; the admin then moved one from Pending to Shipped and cancelled another, and the customer cancelled a third.</p>
+
+<h2 class="page-break">Appendix A: database tables</h2>
+<p>An order is stored in <code>orders</code>, with one row per product in <code>order_items</code>. Orders link to the customer through <code>orders.customer_id</code> → <code>users.user_id</code>.</p>
+<table>
+  <tr><th style="width:19%">Assignment column</th><th style="width:19%">Assignment type</th><th style="width:28%">ShopSphere column and type</th><th>Meaning</th></tr>
+  <tr><td>order id (written as user_id)</td><td>int (pk, auto_increment)</td><td><code>order_id</code> BIGINT, primary key, auto increment; plus <code>order_number</code> (e.g. SS261116-P8Q68X)</td><td>Unique identifier for each order</td></tr>
+  <tr><td>customer_id</td><td>int (fk)</td><td><code>customer_id</code> BIGINT, foreign key → <code>users</code></td><td>The customer who placed the order</td></tr>
+  <tr><td>total_amount</td><td>decimal(10,2)</td><td><code>total_amount</code> DECIMAL(12,2); also <code>subtotal</code>, <code>discount_amount</code>, <code>shipping_fee</code> and <code>tax_amount</code></td><td>Total cost of the order, including shipping and GST</td></tr>
+  <tr><td>order_status</td><td>varchar(50)</td><td><code>status</code> VARCHAR(30)</td><td>PLACED (pending), CONFIRMED, PACKED, SHIPPED, OUT_FOR_DELIVERY, DELIVERED, CANCELLED, RETURN_REQUESTED …</td></tr>
+  <tr><td>shipping_address</td><td>varchar(300)</td><td><code>shipping_name</code>, <code>shipping_phone</code>, <code>address_line1</code>, <code>address_line2</code>, <code>city</code>, <code>state</code>, <code>pincode</code></td><td>Shipping address, copied onto the order so later address-book edits never change it; joined into one line on the dashboard</td></tr>
+  <tr><td>created_at</td><td>datetime</td><td><code>created_at</code> DATETIME(6)</td><td>When the order was placed</td></tr>
+  <tr><td>updated_at</td><td>datetime</td><td><code>updated_at</code> DATETIME(6)</td><td>When the order status was last updated</td></tr>
+  <tr><td>status</td><td>boolean</td><td><code>active</code> BIT(1)</td><td>1 = active order, 0 = cancelled (soft delete). Kept in step with <code>status</code> automatically</td></tr>
+</table>
+<p><code>order_items</code> holds each product's name, store, unit price, quantity, line total, <code>item_status</code>, courier and tracking number. <code>order_item_events</code> holds the tracking history, and <code>payments</code> holds the payment and refund for the order.</p>
+
+<h2>Appendix B: SQL behind each action</h2>
+<p>The full, tested set is in <code>DataBase/queries.sql</code>, section 8.</p>
+<pre><span class="c">-- Place an order: total = items - coupon + shipping; GST is inside the prices</span>
+SET @items    := (SELECT selling_price * 1 FROM products WHERE product_id = 62);
+SET @shipping := (SELECT IF(@items >= free_shipping_threshold, 0, shipping_fee) FROM platform_settings LIMIT 1);
+INSERT INTO orders (order_number, customer_id, status, active, subtotal, discount_amount, shipping_fee,
+                    total_amount, tax_amount, payment_method, shipping_name, shipping_phone,
+                    address_line1, city, state, pincode, created_at, updated_at)
+VALUES ('SS261116-RN9V2C', 8, 'PLACED', b'1', @items, 0, @shipping, @items + @shipping,
+        ROUND(@items * 18 / 118, 2), 'COD', 'Priya Sharma', '9000000010',
+        'Flat 302, Lotus Residency, Kalyani Nagar', 'Pune', 'Maharashtra', '411006', NOW(6), NOW(6));
+
+<span class="c">-- Order dashboard: order ID, customer name, shipping address, total and status</span>
+SELECT o.order_number, u.full_name AS customer_name,
+       CONCAT_WS(', ', o.shipping_name, o.address_line1, o.address_line2, o.city,
+                 CONCAT(o.state, ' ', o.pincode)) AS shipping_address,
+       o.total_amount, o.status, o.active + 0 AS active
+FROM orders o JOIN users u ON u.user_id = o.customer_id
+WHERE o.status &lt;&gt; 'PENDING_PAYMENT'
+ORDER BY o.created_at DESC LIMIT 10;
+
+<span class="c">-- Filters</span>
+SELECT * FROM orders WHERE status IN ('PLACED','CONFIRMED','PROCESSING','PACKED');   <span class="c">-- Pending</span>
+SELECT * FROM orders WHERE status IN ('SHIPPED','OUT_FOR_DELIVERY');                <span class="c">-- Shipped</span>
+SELECT * FROM orders WHERE status = 'DELIVERED';                                    <span class="c">-- Delivered</span>
+SELECT * FROM orders WHERE active = b'0';                                           <span class="c">-- Cancelled</span>
+
+<span class="c">-- Update order status: Pending -> Shipped</span>
+UPDATE order_items SET item_status = 'SHIPPED', courier_name = 'ShopSphere Delivery',
+       tracking_number = CONCAT('SSD-', order_item_id), shipped_at = NOW(6)
+WHERE order_id = 14 AND item_status IN ('PLACED','CONFIRMED','PACKED');
+UPDATE orders SET status = 'SHIPPED', updated_at = NOW(6) WHERE order_id = 14;
+
+<span class="c">-- Cancel (soft delete) an order that has not shipped: stock back, status Cancelled, active = 0</span>
+UPDATE products p JOIN order_items oi ON oi.product_id = p.product_id
+SET p.stock_quantity = p.stock_quantity + oi.quantity
+WHERE oi.order_id = 15 AND oi.item_status IN ('PLACED','CONFIRMED','PACKED');
+UPDATE order_items SET item_status = 'CANCELLED' WHERE order_id = 15 AND item_status IN ('PLACED','CONFIRMED','PACKED');
+UPDATE orders SET status = 'CANCELLED', active = b'0', updated_at = NOW(6)
+WHERE order_id = 15 AND status IN ('PLACED','CONFIRMED','PACKED');</pre>
+<p class="small">The IDs are the ones in the local database used for the screenshots (order 14 = SS261116-P8Q68X, order 15 = SS261116-QPUHSU, customer 8 = Priya Sharma).</p>
+
+<h2>Appendix C: API endpoints of the module</h2>
+<p>Protected endpoints need <code>Authorization: Bearer &lt;token&gt;</code>. <code>/customer/**</code> is for customers, <code>/admin/**</code> for admins.</p>
+<table>
+  <tr><th style="width:9%">Method</th><th style="width:38%">Path</th><th>Purpose</th></tr>
+  <tr><td>POST</td><td><code>/customer/cart/items</code></td><td>Add a product to the cart <code>{ productId, quantity }</code></td></tr>
+  <tr><td>POST</td><td><code>/customer/checkout</code></td><td>Place an order: address, optional coupon, <code>paymentMethod</code> RAZORPAY or COD. The server works out the totals</td></tr>
+  <tr><td>POST</td><td><code>/customer/payments/verify</code></td><td>Confirm a Razorpay payment (signature checked)</td></tr>
+  <tr><td>GET</td><td><code>/customer/orders</code>, <code>/customer/orders/{id}</code></td><td>The customer's orders and one order with tracking</td></tr>
+  <tr><td>POST</td><td><code>/customer/orders/{id}/cancel</code></td><td>Customer cancels an order that has not shipped</td></tr>
+  <tr><td>GET</td><td><code>/admin/orders?group=&amp;status=&amp;search=&amp;page=&amp;size=</code></td><td>Order dashboard. <code>group</code> = PENDING, SHIPPED, DELIVERED, CANCELLED, RETURNS or UNPAID</td></tr>
+  <tr><td>GET</td><td><code>/admin/orders/summary</code></td><td>Total, pending, shipped, delivered, cancelled and returns counts</td></tr>
+  <tr><td>GET</td><td><code>/admin/orders/{id}</code></td><td>One order with items, tracking, totals and address</td></tr>
+  <tr><td>PATCH</td><td><code>/admin/orders/{id}/status</code></td><td>Update status <code>{ "status": "SHIPPED", "note": "…" }</code>; <code>"CANCELLED"</code> cancels the order</td></tr>
+</table>
+<p><b>Tests:</b> <code>OrderManagementTest</code> checks that GST is worked out correctly, that the Pending/Shipped/Cancelled filters contain the right statuses, that an admin can move a pending order straight to Shipped (each step recorded, one customer notification), that orders cannot move backwards, that a customer can cancel until shipping but not after, that an admin cannot cancel shipped items, and that the shipping address is shown as one line. <code>CheckoutServiceImplTest</code> covers placing and paying for orders.</p>
+
+</body>
+</html>

@@ -471,3 +471,98 @@ SELECT product_id, product_name, sku, updated_at FROM products WHERE active = b'
 DELETE FROM products
 WHERE sku = 'SQL-LAMP-001'
   AND product_id NOT IN (SELECT product_id FROM (SELECT product_id FROM order_items) AS used);
+-- =====================================================================
+-- 8. ORDER MANAGEMENT MODULE (assignment)
+--    Assignment column  ->  ShopSphere column
+--    order id           ->  order_id (+ readable order_number, e.g. SS261116-P8Q68X)
+--    order_status       ->  status VARCHAR(30)   (PLACED = "Pending", SHIPPED, DELIVERED, CANCELLED, ...)
+--    shipping_address   ->  shipping_name, address_line1, address_line2, city, state, pincode
+--    status (boolean)   ->  active BIT(1)        (1 = active, 0 = cancelled; soft delete)
+--    Each order has order_items (one row per product) with their own item_status.
+-- =====================================================================
+
+-- 8.1 Place an order: the total is items - coupon + shipping; GST (18%) is already inside the prices.
+--     (ShopSphere does this in one transaction at checkout; shown here step by step.)
+SET @customer := (SELECT user_id FROM users WHERE email = 'demo.customer@shopsphere.local');
+SET @product  := 62;   -- Tales from the Western Ghats (paperback)
+SET @qty      := 1;
+SET @items    := (SELECT selling_price * @qty FROM products WHERE product_id = @product);
+SET @shipping := (SELECT IF(@items >= free_shipping_threshold, 0, shipping_fee) FROM platform_settings LIMIT 1);
+SELECT @items AS items_total, @shipping AS shipping_fee, ROUND(@items + @shipping, 2) AS total_amount,
+       ROUND(@items * 18 / 118, 2) AS gst_included;
+
+INSERT INTO orders (order_number, customer_id, status, active, subtotal, discount_amount, shipping_fee,
+                    total_amount, tax_amount, payment_method, shipping_name, shipping_phone,
+                    address_line1, city, state, pincode, created_at, updated_at)
+VALUES ('SQL-EXAMPLE-01', @customer, 'PLACED', b'1', @items, 0, @shipping, @items + @shipping,
+        ROUND(@items * 18 / 118, 2), 'COD', 'Priya Sharma', '9000000010',
+        'Flat 302, Lotus Residency, Kalyani Nagar', 'Pune', 'Maharashtra', '411006', NOW(6), NOW(6));
+SET @order := LAST_INSERT_ID();
+INSERT INTO order_items (order_id, product_id, seller_id, product_name, store_name, unit_price, quantity,
+                         line_total, item_status)
+SELECT @order, p.product_id, p.seller_id, p.product_name, u.store_name, p.selling_price, @qty,
+       p.selling_price * @qty, 'PLACED'
+FROM products p JOIN users u ON u.user_id = p.seller_id WHERE p.product_id = @product;
+UPDATE products SET stock_quantity = stock_quantity - @qty WHERE product_id = @product;
+
+-- 8.2 Order dashboard: order ID, customer name, shipping address, total and status
+SELECT o.order_id,
+       o.order_number,
+       u.full_name                                        AS customer_name,
+       CONCAT_WS(', ', o.shipping_name, o.address_line1, o.address_line2, o.city,
+                 CONCAT(o.state, ' ', o.pincode))         AS shipping_address,
+       o.total_amount,
+       o.tax_amount                                       AS gst_included,
+       CASE WHEN o.status IN ('PLACED','CONFIRMED','PROCESSING','PACKED','CANCELLATION_REQUESTED') THEN 'Pending'
+            WHEN o.status IN ('SHIPPED','OUT_FOR_DELIVERY') THEN 'Shipped'
+            WHEN o.status = 'DELIVERED' THEN 'Delivered'
+            WHEN o.status = 'CANCELLED' THEN 'Cancelled'
+            ELSE o.status END                             AS order_status,
+       o.active + 0                                       AS active,
+       o.created_at,
+       o.updated_at
+FROM orders o
+JOIN users u ON u.user_id = o.customer_id
+WHERE o.status <> 'PENDING_PAYMENT'
+ORDER BY o.created_at DESC
+LIMIT 10 OFFSET 0;
+
+-- 8.3 Filter by status: Pending / Shipped / Delivered / Cancelled
+SELECT order_number, status FROM orders WHERE status IN ('PLACED','CONFIRMED','PROCESSING','PACKED');  -- Pending
+SELECT order_number, status FROM orders WHERE status IN ('SHIPPED','OUT_FOR_DELIVERY');               -- Shipped
+SELECT order_number, status FROM orders WHERE status = 'DELIVERED';                                   -- Delivered
+SELECT order_number, status FROM orders WHERE active = b'0';                                          -- Cancelled
+
+-- 8.4 Summary cards
+SELECT COUNT(*)                                                                        AS total_orders,
+       SUM(status IN ('PLACED','CONFIRMED','PROCESSING','PACKED','CANCELLATION_REQUESTED')) AS pending,
+       SUM(status IN ('SHIPPED','OUT_FOR_DELIVERY'))                                   AS shipped,
+       SUM(status = 'DELIVERED')                                                       AS delivered,
+       SUM(status = 'CANCELLED')                                                       AS cancelled
+FROM orders
+WHERE status <> 'PENDING_PAYMENT';
+
+-- 8.5 Update order status: Pending -> Shipped (the app also records each step in order_item_events)
+UPDATE order_items SET item_status = 'SHIPPED', courier_name = 'ShopSphere Delivery',
+                       tracking_number = CONCAT('SSD-', order_item_id), shipped_at = NOW(6)
+WHERE order_id = @order AND item_status IN ('PLACED','CONFIRMED','PROCESSING','PACKED');
+UPDATE orders SET status = 'SHIPPED', updated_at = NOW(6) WHERE order_id = @order;
+
+-- 8.6 Cancel an order that has NOT been shipped yet (soft delete: the row stays, status = CANCELLED,
+--     active = 0, stock goes back). Shipped orders are left untouched.
+SET @order2 := (SELECT order_id FROM orders WHERE order_number = 'SQL-EXAMPLE-01');
+UPDATE products p JOIN order_items oi ON oi.product_id = p.product_id
+SET p.stock_quantity = p.stock_quantity + oi.quantity
+WHERE oi.order_id = @order2 AND oi.item_status IN ('PLACED','CONFIRMED','PROCESSING','PACKED');
+UPDATE order_items SET item_status = 'CANCELLED'
+WHERE order_id = @order2 AND item_status IN ('PLACED','CONFIRMED','PROCESSING','PACKED');
+UPDATE orders SET status = 'CANCELLED', active = b'0', status_note = 'Cancelled by ShopSphere', updated_at = NOW(6)
+WHERE order_id = @order2 AND status IN ('PLACED','CONFIRMED','PROCESSING','PACKED');
+-- (0 rows change here, because the example order was shipped in 8.5.)
+
+-- Clean up the example order created above
+UPDATE products p JOIN order_items oi ON oi.product_id = p.product_id
+SET p.stock_quantity = p.stock_quantity + oi.quantity
+WHERE oi.order_id = @order AND oi.item_status <> 'CANCELLED';
+DELETE FROM order_items WHERE order_id = @order;
+DELETE FROM orders WHERE order_id = @order;

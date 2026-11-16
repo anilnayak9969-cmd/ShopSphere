@@ -24,8 +24,14 @@ public record OrderResponse(
         BigDecimal discountAmount,
         BigDecimal shippingFee,
         BigDecimal totalAmount,
+        /* GST included in the prices (tax-inclusive pricing). */
+        BigDecimal taxAmount,
+        /* true for active orders, false once cancelled (soft delete). */
+        boolean active,
         String customerName,
         String customerEmail,
+        /* Full shipping address on one line, for lists. */
+        String shippingAddress,
         String shippingName,
         String shippingPhone,
         String addressLine1,
@@ -61,7 +67,9 @@ public record OrderResponse(
         return new OrderResponse(o.getOrderId(), o.getOrderNumber(), o.getStatus(), o.getStatusNote(),
                 o.getStatus().nextStatuses(), o.getPaymentMethod(), payment.status(), payment.refundedAmount(),
                 o.getSubtotal(), o.getCouponCode(), o.getDiscountAmount(), o.getShippingFee(), o.getTotalAmount(),
-                o.getCustomer().getFullName(), o.getCustomer().getEmail(), o.getShippingName(), o.getShippingPhone(),
+                o.getTaxAmount(), o.getStatus() != OrderStatus.CANCELLED,
+                o.getCustomer().getFullName(), o.getCustomer().getEmail(), o.getShippingAddress(),
+                o.getShippingName(), o.getShippingPhone(),
                 o.getAddressLine1(), o.getAddressLine2(), o.getCity(), o.getState(), o.getPincode(),
                 o.getItems().stream().mapToInt(i -> i.getQuantity()).sum(), o.getCreatedAt(), o.getPaidAt(),
                 o.getDeliveredAt(), items);

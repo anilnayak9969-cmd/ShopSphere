@@ -5,9 +5,11 @@ import com.example.ecommerce.dtos.delivery.DeliveryDashboardResponse;
 import com.example.ecommerce.dtos.delivery.DeliveryJobResponse;
 import com.example.ecommerce.dtos.order.FulfilmentUpdateRequest;
 import com.example.ecommerce.dtos.order.OrderResponse;
+import com.example.ecommerce.dtos.order.OrderSummaryResponse;
 import com.example.ecommerce.dtos.order.PaymentResponse;
 import com.example.ecommerce.dtos.order.SellerOrderItemResponse;
 import com.example.ecommerce.enums.OrderStatus;
+import com.example.ecommerce.enums.OrderStatusGroup;
 import com.example.ecommerce.enums.PaymentStatus;
 
 public interface OrderService {
@@ -16,7 +18,7 @@ public interface OrderService {
 
     OrderResponse customerOrder(Long customerId, Long orderId);
 
-    /** Customers may cancel until any item of the order is packed. */
+    /** Customers may cancel until any item of the order has been shipped (soft delete: status CANCELLED). */
     OrderResponse cancelByCustomer(Long customerId, Long orderId);
 
     PageResponse<PaymentResponse> customerPayments(Long customerId, int page, int size);
@@ -28,9 +30,22 @@ public interface OrderService {
 
     PageResponse<OrderResponse> adminOrders(OrderStatus status, String search, int page, int size);
 
+    /**
+     * Order dashboard (Order Management module). An exact status wins over a group; with neither, all
+     * orders except unpaid checkout attempts are listed.
+     */
+    PageResponse<OrderResponse> adminOrders(OrderStatus status, OrderStatusGroup group, String search, int page, int size);
+
+    /** Counts for the summary cards: total, pending, shipped, delivered, cancelled, returns. */
+    OrderSummaryResponse adminOrderSummary();
+
     OrderResponse adminOrder(Long orderId);
 
-    /** Admin moves every eligible line of the order to the given status (to resolve stuck orders). */
+    /**
+     * Admin moves every eligible line of the order to the given status. Forward moves may skip steps
+     * (e.g. Pending → Shipped); the steps in between are recorded in the tracking history.
+     * CANCELLED cancels every line that has not been shipped yet.
+     */
     OrderResponse adminUpdateStatus(Long orderId, OrderStatus status, String note);
 
     PageResponse<PaymentResponse> adminPayments(PaymentStatus status, boolean refundedOnly, int page, int size);

@@ -7,7 +7,8 @@ import com.example.ecommerce.entites.PlatformSettings;
 
 /**
  * Money rules shared by the cart, coupons and checkout, so every screen shows the same total.
- * Prices are GST-inclusive, so no separate tax is added. Shipping comes from platform settings.
+ * Prices are GST-inclusive, so no separate tax is added; {@link #includedGst} shows how much of the
+ * total is tax. Shipping comes from platform settings.
  */
 public final class PricingPolicy {
 
@@ -19,6 +20,21 @@ public final class PricingPolicy {
             return BigDecimal.ZERO.setScale(2);
         }
         return settings.getShippingFee().setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /** GST rate assumed for the catalogue. Prices already include it, so it is shown, not added. */
+    public static final BigDecimal GST_PERCENT = BigDecimal.valueOf(18);
+
+    /**
+     * GST contained in a GST-inclusive amount: amount * rate / (100 + rate).
+     * ₹1,180 at 18% contains ₹180 GST.
+     */
+    public static BigDecimal includedGst(BigDecimal inclusiveAmount) {
+        if (inclusiveAmount == null || inclusiveAmount.signum() <= 0) {
+            return BigDecimal.ZERO.setScale(2);
+        }
+        return inclusiveAmount.multiply(GST_PERCENT)
+                .divide(GST_PERCENT.add(BigDecimal.valueOf(100)), 2, RoundingMode.HALF_UP);
     }
 
     public static BigDecimal lineTotal(BigDecimal unitPrice, int quantity) {

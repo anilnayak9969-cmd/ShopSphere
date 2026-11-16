@@ -31,6 +31,8 @@ import com.example.ecommerce.dtos.order.FulfilmentUpdateRequest;
 import com.example.ecommerce.dtos.order.OrderItemResponse;
 import com.example.ecommerce.dtos.order.OrderResponse;
 import com.example.ecommerce.dtos.order.OrderResponse.PaymentInfo;
+import com.example.ecommerce.dtos.order.OrderSummaryResponse;
+import com.example.ecommerce.enums.OrderStatusGroup;
 import com.example.ecommerce.dtos.order.PaymentResponse;
 import com.example.ecommerce.dtos.order.SellerOrderItemResponse;
 import com.example.ecommerce.entites.CustomerOrder;
@@ -73,7 +75,9 @@ public class OrderServiceImpl implements OrderService {
     public static final Set<OrderStatus> RECEIVED_ITEM_STATUSES =
             EnumSet.of(OrderStatus.DELIVERED, OrderStatus.RETURN_REQUESTED, OrderStatus.RETURNED);
 
-    private static final Set<OrderStatus> CUSTOMER_CANCELLABLE = EnumSet.of(OrderStatus.PLACED, OrderStatus.CONFIRMED);
+    /** A customer may cancel while nothing has been shipped yet. */
+    private static final Set<OrderStatus> CUSTOMER_CANCELLABLE = EnumSet.of(OrderStatus.PLACED, OrderStatus.CONFIRMED,
+            OrderStatus.PROCESSING, OrderStatus.PACKED);
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
@@ -111,7 +115,7 @@ public class OrderServiceImpl implements OrderService {
         List<OrderItem> active = order.getItems().stream().filter(i -> i.getItemStatus().isActiveItem()).toList();
         if (active.isEmpty() || !active.stream().allMatch(i -> CUSTOMER_CANCELLABLE.contains(i.getItemStatus()))) {
             throw ApiException.badRequest("NOT_CANCELLABLE",
-                    "This order is already being packed or shipped, so it can no longer be cancelled online.");
+                    "This order has already been shipped, so it can no longer be cancelled. You can return it after delivery.");
         }
         cancelItems(order, active, "Cancelled by customer");
         active.forEach(item -> notificationService.notify(item.getSeller(), "Order item cancelled",
@@ -246,8 +250,39 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(readOnly = true)
     public PageResponse<OrderResponse> adminOrders(OrderStatus status, String search, int page, int size) {
         String term = search == null || search.isBlank() ? null : search.trim();
-        return PageResponse.of(orderRepository.search(status, term, pageable(page, size)),
+        Set<OrderStatus> statuses = status == null ? EnumSet.allOf(OrderStatus.class) : EnumSet.of(status);
+        return PageResponse.of(orderRepository.search(status == null, statuses, term, pageable(page, size)),
                 o -> OrderResponse.summary(o, paymentInfo(o)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<OrderResponse> adminOrders(OrderStatus status, OrderStatusGroup group, String search,
+                                                   int page, int size) {
+        String term = search == null || search.isBlank() ? null : search.trim();
+        Set<OrderStatus> statuses;
+        if (status != null) {
+            statuses = EnumSet.of(status);
+        } else if (group != null) {
+            statuses = group.statuses();
+        } else {
+            // "All orders": everything except checkouts that were never paid.
+            statuses = EnumSet.complementOf(EnumSet.of(OrderStatus.PENDING_PAYMENT));
+        }
+        return PageResponse.of(orderRepository.search(false, statuses, term, pageable(page, size)),
+                o -> OrderResponse.summary(o, paymentInfo(o)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderSummaryResponse adminOrderSummary() {
+        return new OrderSummaryResponse(
+                orderRepository.countByStatusNot(OrderStatus.PENDING_PAYMENT),
+                orderRepository.countByStatusIn(OrderStatusGroup.PENDING.statuses()),
+                orderRepository.countByStatusIn(OrderStatusGroup.SHIPPED.statuses()),
+                orderRepository.countByStatusIn(OrderStatusGroup.DELIVERED.statuses()),
+                orderRepository.countByStatusIn(OrderStatusGroup.CANCELLED.statuses()),
+                orderRepository.countByStatusIn(OrderStatusGroup.RETURNS.statuses()));
     }
 
     @Override
@@ -273,15 +308,41 @@ public class OrderServiceImpl implements OrderService {
         if (!OrderStatus.FULFILMENT_TARGETS.contains(status)) {
             throw ApiException.badRequest("INVALID_STATUS_TRANSITION", "Orders cannot be set to " + status + " here.");
         }
+        int targetStep = ADMIN_PATH.indexOf(status);
+        // Every line that is behind the target on the normal path moves forward to it.
         List<OrderItem> eligible = order.getItems().stream()
-                .filter(i -> i.getItemStatus().canTransitionTo(status)).toList();
+                .filter(i -> ADMIN_PATH.contains(i.getItemStatus()) && ADMIN_PATH.indexOf(i.getItemStatus()) < targetStep)
+                .toList();
         if (eligible.isEmpty()) {
             throw ApiException.badRequest("INVALID_STATUS_TRANSITION",
                     "No item of this order can move from its current status to " + status + ".");
         }
-        // The admin may override missing tracking details when resolving an issue.
-        eligible.forEach(item -> applyItemStatus(item, status, null, null, note, false));
+        // The admin may skip steps (e.g. Pending → Shipped). Each step in between is still applied and
+        // recorded, so tracking history, stock and payment rules stay correct; only the last one notifies.
+        for (OrderItem item : eligible) {
+            while (item.getItemStatus() != status) {
+                OrderStatus next = nextOnPath(item.getItemStatus());
+                applyItemStatus(item, next, null, null, next == status ? note : null, false, next == status);
+            }
+        }
         return withReturnInfo(order);
+    }
+
+    /** The normal forward path of an order line, used for admin status jumps. */
+    private static final List<OrderStatus> ADMIN_PATH = List.of(OrderStatus.PLACED, OrderStatus.CONFIRMED,
+            OrderStatus.PROCESSING, OrderStatus.PACKED, OrderStatus.SHIPPED, OrderStatus.OUT_FOR_DELIVERY,
+            OrderStatus.DELIVERED);
+
+    private static OrderStatus nextOnPath(OrderStatus current) {
+        return switch (current) {
+            case PLACED -> OrderStatus.CONFIRMED;
+            case CONFIRMED, PROCESSING -> OrderStatus.PACKED;
+            case PACKED -> OrderStatus.SHIPPED;
+            case SHIPPED -> OrderStatus.OUT_FOR_DELIVERY;
+            case OUT_FOR_DELIVERY -> OrderStatus.DELIVERED;
+            default -> throw ApiException.badRequest("INVALID_STATUS_TRANSITION",
+                    "An item in status " + current + " cannot be moved forward.");
+        };
     }
 
     @Override
@@ -296,6 +357,11 @@ public class OrderServiceImpl implements OrderService {
     /** Validates and applies one item status change, with the side effects of that status. */
     private void applyItemStatus(OrderItem item, OrderStatus target, String courier, String tracking, String note,
                                  boolean requireTracking) {
+        applyItemStatus(item, target, courier, tracking, note, requireTracking, true);
+    }
+
+    private void applyItemStatus(OrderItem item, OrderStatus target, String courier, String tracking, String note,
+                                 boolean requireTracking, boolean notifyCustomer) {
         OrderStatus current = item.getItemStatus();
         if (!OrderStatus.FULFILMENT_TARGETS.contains(target) || !current.canTransitionTo(target)) {
             throw ApiException.badRequest("INVALID_STATUS_TRANSITION",
@@ -312,6 +378,11 @@ public class OrderServiceImpl implements OrderService {
             }
             item.setCourierName(isBlank(courier) ? item.getCourierName() : courier.trim());
             item.setTrackingNumber(isBlank(tracking) ? item.getTrackingNumber() : tracking.trim());
+            if (isBlank(item.getCourierName())) {
+                // Shipped by an admin without courier details: ShopSphere's own delivery service.
+                item.setCourierName(COURIER);
+                item.setTrackingNumber("SSD-" + item.getOrderItemId());
+            }
             item.setShippedAt(LocalDateTime.now());
         }
         if (target == OrderStatus.DELIVERED) {
@@ -324,6 +395,9 @@ public class OrderServiceImpl implements OrderService {
             liveEventService.toRole(Role.DELIVERY_PARTNER, "pickups", Map.of("orderItemId", item.getOrderItemId()));
         }
         orderSupport.refreshOrderStatus(order);
+        if (!notifyCustomer) {
+            return;
+        }
         notificationService.notify(order.getCustomer(), statusTitle(target),
                 item.getProductName() + " (order " + order.getOrderNumber() + ") is now " + label(target)
                         + (target == OrderStatus.SHIPPED && item.getTrackingNumber() != null

@@ -12,6 +12,14 @@ export function formatPrice(value) {
   return Number.isInteger(number) ? inrWhole.format(number) : inrPaise.format(number)
 }
 
+/** GST contained in a GST-inclusive amount (18%), same rule as the server's PricingPolicy.includedGst. */
+export const GST_PERCENT = 18
+export function includedGst(inclusiveAmount) {
+  const amount = Number(inclusiveAmount) || 0
+  if (amount <= 0) return 0
+  return Math.round((amount * GST_PERCENT * 100) / (100 + GST_PERCENT)) / 100
+}
+
 export function formatDate(value) {
   if (!value) return '—'
   return new Date(value).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })

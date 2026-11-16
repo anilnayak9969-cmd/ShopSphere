@@ -26,15 +26,23 @@ public interface OrderRepository extends JpaRepository<CustomerOrder, Long> {
     @EntityGraph(attributePaths = {"items", "customer"})
     Optional<CustomerOrder> findWithItemsByOrderId(Long orderId);
 
+    /**
+     * Order dashboard search. With anyStatus = true every status matches; otherwise only the given
+     * statuses do (one status, or a group such as "Pending" = placed, confirmed and packed).
+     */
     @Query("""
             select o from CustomerOrder o
-            where (:status is null or o.status = :status)
+            where (:anyStatus = true or o.status in :statuses)
               and (:search is null
                    or lower(o.orderNumber) like lower(concat('%', :search, '%'))
-                   or lower(o.customer.email) like lower(concat('%', :search, '%')))
+                   or lower(o.customer.email) like lower(concat('%', :search, '%'))
+                   or lower(o.customer.fullName) like lower(concat('%', :search, '%'))
+                   or lower(o.shippingName) like lower(concat('%', :search, '%'))
+                   or lower(o.city) like lower(concat('%', :search, '%')))
             order by o.createdAt desc
             """)
-    Page<CustomerOrder> search(@Param("status") OrderStatus status, @Param("search") String search, Pageable pageable);
+    Page<CustomerOrder> search(@Param("anyStatus") boolean anyStatus, @Param("statuses") Collection<OrderStatus> statuses,
+                               @Param("search") String search, Pageable pageable);
 
     long countByStatus(OrderStatus status);
 

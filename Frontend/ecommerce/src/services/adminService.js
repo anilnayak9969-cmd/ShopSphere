@@ -37,8 +37,10 @@ const adminService = {
   moveProduct: (id, categoryId) => api.patch(`/admin/products/${id}/category`, { categoryId }).then((r) => r.data),
   rejectProduct: (id, reason) => api.patch(`/admin/products/${id}/reject`, { reason }).then((r) => r.data),
 
-  // Orders, payments, returns
+  // Order Management (dashboard, status updates, cancel), payments, returns
+  /** params: { group: PENDING|SHIPPED|DELIVERED|CANCELLED|RETURNS|UNPAID, status, search, page, size } */
   getOrders: (params) => api.get('/admin/orders', { params: cleanParams(params) }).then((r) => r.data),
+  getOrderSummary: () => api.get('/admin/orders/summary').then((r) => r.data),
   getOrder: (id) => api.get(`/admin/orders/${id}`).then((r) => r.data),
   setOrderStatus: (id, status, note) => api.patch(`/admin/orders/${id}/status`, { status, note }).then((r) => r.data),
   getPayments: (params) => api.get('/admin/payments', { params: cleanParams(params) }).then((r) => r.data),

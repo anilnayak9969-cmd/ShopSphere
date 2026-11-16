@@ -32,5 +32,18 @@ public class SchemaPatcher implements CommandLineRunner {
             jdbc.execute("alter table payments modify razorpay_order_id varchar(60) null");
             log.info("Schema patch: payments.razorpay_order_id is now nullable (needed for Cash on Delivery)");
         }
+
+        // Order Management: orders.active (false = cancelled) and orders.tax_amount were added later.
+        // Bring rows created before those columns existed into line; both updates are no-ops afterwards.
+        int deactivated = jdbc.update("update orders set active = b'0' where status = 'CANCELLED' and active = b'1'");
+        int reactivated = jdbc.update("update orders set active = b'1' where status <> 'CANCELLED' and active = b'0'");
+        int taxed = jdbc.update("""
+                update orders set tax_amount = round((subtotal - discount_amount) * 18 / 118, 2)
+                where tax_amount = 0 and subtotal - discount_amount > 0
+                """);
+        if (deactivated + reactivated + taxed > 0) {
+            log.info("Schema patch: synced orders.active on {} row(s), filled orders.tax_amount on {} row(s)",
+                    deactivated + reactivated, taxed);
+        }
     }
 }

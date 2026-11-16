@@ -12,7 +12,7 @@ import CheckoutSteps from '../components/CheckoutSteps'
 import CouponBox from '../components/CouponBox'
 import { Alert, PageLoader, SafeImage } from '../components/ui'
 import { getErrorMessage, getFieldErrors } from '../utils/errors'
-import { formatPrice } from '../utils/format'
+import { formatPrice, includedGst } from '../utils/format'
 import { loadRazorpay } from '../utils/razorpay'
 import { getSavedCoupon, saveCoupon } from '../utils/couponStorage'
 
@@ -215,14 +215,14 @@ export default function Checkout() {
         <span>Delivery</span>
         <span>{Number(totals.shipping) === 0 ? <span className="text-success">Free</span> : formatPrice(totals.shipping)}</span>
       </div>
-      <div className="ss-summary-row text-muted small">
-        <span>Taxes</span>
-        <span>Included in prices</span>
-      </div>
       <div className="ss-divider" />
       <div className="ss-summary-row ss-summary-total">
         <span>Total payable</span>
         <span>{formatPrice(totals.total)}</span>
+      </div>
+      <div className="ss-summary-row text-muted small">
+        <span>Includes GST (18%)</span>
+        <span>{formatPrice(includedGst(Number(cart.subtotal) - Number(totals.discount)))}</span>
       </div>
       {Number(totals.discount) > 0 && <div className="small text-success mt-1">You save {formatPrice(totals.discount)} on this order.</div>}
     </div>

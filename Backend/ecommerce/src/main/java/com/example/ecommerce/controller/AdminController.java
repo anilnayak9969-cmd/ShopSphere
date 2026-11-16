@@ -27,6 +27,8 @@ import com.example.ecommerce.dtos.common.PageResponse;
 import com.example.ecommerce.dtos.common.StatusUpdateRequest;
 import com.example.ecommerce.dtos.order.OrderResponse;
 import com.example.ecommerce.dtos.order.OrderStatusUpdateRequest;
+import com.example.ecommerce.dtos.order.OrderSummaryResponse;
+import com.example.ecommerce.enums.OrderStatusGroup;
 import com.example.ecommerce.dtos.order.PaymentResponse;
 import com.example.ecommerce.dtos.product.AdminProductRequest;
 import com.example.ecommerce.dtos.product.ProductCategoryRequest;
@@ -170,12 +172,22 @@ public class AdminController {
 
     // ---------------------------------------------------------------- orders
 
+    /**
+     * Order dashboard. group=PENDING|SHIPPED|DELIVERED|CANCELLED|RETURNS|UNPAID filters by status group;
+     * status= filters by one exact status. Search matches order number, customer name or email, and city.
+     */
     @GetMapping("/orders")
     public PageResponse<OrderResponse> orders(@RequestParam(required = false) OrderStatus status,
+                                              @RequestParam(required = false) OrderStatusGroup group,
                                               @RequestParam(required = false) String search,
                                               @RequestParam(defaultValue = "0") int page,
                                               @RequestParam(defaultValue = "10") int size) {
-        return orderService.adminOrders(status, search, page, size);
+        return orderService.adminOrders(status, group, search, page, size);
+    }
+
+    @GetMapping("/orders/summary")
+    public OrderSummaryResponse orderSummary() {
+        return orderService.adminOrderSummary();
     }
 
     @GetMapping("/orders/{id}")

@@ -72,6 +72,18 @@ public class CustomerOrder extends AuditableEntity {
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
+    /** GST included in the item prices (prices are tax-inclusive), worked out at checkout. */
+    @Column(name = "tax_amount", nullable = false, precision = 12, scale = 2,
+            columnDefinition = "decimal(12,2) not null default 0.00")
+    private BigDecimal taxAmount = BigDecimal.ZERO;
+
+    /**
+     * Order Management "status" flag: true for active orders, false for cancelled ones (soft delete:
+     * a cancelled order is never removed). Kept in step with {@link #status} before every save.
+     */
+    @Column(nullable = false, columnDefinition = "bit not null default 1")
+    private boolean active = true;
+
     @Column(name = "shipping_name", nullable = false, length = 100)
     private String shippingName;
 
@@ -113,5 +125,31 @@ public class CustomerOrder extends AuditableEntity {
     public void addItem(OrderItem item) {
         item.setOrder(this);
         items.add(item);
+    }
+
+    /** The shipping address as one line, e.g. "Priya Sharma, 12 MG Road, Pune, Maharashtra 411001". */
+    public String getShippingAddress() {
+        String cityLine = java.util.stream.Stream.of(state, pincode)
+                .filter(s -> s != null && !s.isBlank()).collect(java.util.stream.Collectors.joining(" "));
+        return java.util.stream.Stream.of(shippingName, addressLine1, addressLine2, city, cityLine)
+                .filter(s -> s != null && !s.isBlank())
+                .collect(java.util.stream.Collectors.joining(", "));
+    }
+
+    // These override AuditableEntity's @PrePersist / @PreUpdate callbacks (JPA calls the override).
+    @Override
+    protected void onCreate() {
+        super.onCreate();
+        syncActive();
+    }
+
+    @Override
+    protected void onUpdate() {
+        super.onUpdate();
+        syncActive();
+    }
+
+    private void syncActive() {
+        this.active = status != OrderStatus.CANCELLED;
     }
 }

@@ -132,6 +132,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         order.setDiscountAmount(discount);
         order.setShippingFee(shipping);
         order.setTotalAmount(afterDiscount.add(shipping));
+        order.setTaxAmount(PricingPolicy.includedGst(afterDiscount));
 
         long amountInPaise = PricingPolicy.toPaise(order.getTotalAmount());
         if (amountInPaise < 100) {
