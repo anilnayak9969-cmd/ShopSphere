@@ -79,7 +79,7 @@ export default function AdminDashboard() {
       </div>
       <div className="row g-3 mb-4">
         <div className="col-6 col-xl-3">
-          <StatCard to="/admin/users" label="Customers" value={data.totalCustomers} icon="bi-people" />
+          <StatCard to="/admin/customers" label="Customers" value={data.totalCustomers} icon="bi-people" />
         </div>
         <div className="col-6 col-xl-3">
           <StatCard to="/admin/sellers" label="Sellers" value={data.totalSellers} icon="bi-shop" foot={`${data.pendingSellers} pending approval`} />

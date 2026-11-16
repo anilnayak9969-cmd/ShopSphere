@@ -39,4 +39,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
                       @Param("sellerStatus") SellerStatus sellerStatus,
                       @Param("search") String search,
                       Pageable pageable);
+
+    /** Customer Management dashboard: customers only, by name, email or phone, optionally active/inactive. */
+    @Query("""
+            select u from User u
+            where u.role = com.example.ecommerce.enums.Role.CUSTOMER
+              and (:active is null or u.active = :active)
+              and (:search is null
+                   or lower(u.fullName) like lower(concat('%', :search, '%'))
+                   or lower(u.email) like lower(concat('%', :search, '%'))
+                   or u.phone like concat('%', :search, '%'))
+            """)
+    Page<User> searchCustomers(@Param("active") Boolean active, @Param("search") String search, Pageable pageable);
+
+    long countByRoleAndActive(Role role, boolean active);
+
+    long countByRoleAndCreatedAtAfter(Role role, java.time.LocalDateTime after);
+
+    boolean existsByEmailIgnoreCaseAndIdNot(String email, Long id);
 }

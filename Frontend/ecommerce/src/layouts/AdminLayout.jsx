@@ -3,6 +3,7 @@ import DashboardLayout from './DashboardLayout'
 const LINKS = [
   { to: '/admin', label: 'Overview', icon: 'bi-speedometer2', end: true },
   { to: '/admin/users', label: 'Users', icon: 'bi-people' },
+  { to: '/admin/customers', label: 'Customers', icon: 'bi-person-vcard' },
   { to: '/admin/sellers', label: 'Sellers', icon: 'bi-shop' },
   { to: '/admin/delivery-partners', label: 'Delivery partners', icon: 'bi-bicycle' },
   { to: '/admin/categories', label: 'Categories', icon: 'bi-tags' },

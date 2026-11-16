@@ -44,6 +44,30 @@ public interface OrderRepository extends JpaRepository<CustomerOrder, Long> {
     Page<CustomerOrder> search(@Param("anyStatus") boolean anyStatus, @Param("statuses") Collection<OrderStatus> statuses,
                                @Param("search") String search, Pageable pageable);
 
+    /**
+     * Customer Management: order history totals per customer. Rows are
+     * [customerId, orders placed, amount spent on orders that were not cancelled or returned, last order time].
+     * Unpaid checkout attempts are ignored.
+     */
+    @Query("""
+            select o.customer.id, count(o),
+                   coalesce(sum(case when o.status in :notSpent then 0 else o.totalAmount end), 0),
+                   max(o.createdAt)
+            from CustomerOrder o
+            where o.customer.id in :customerIds
+              and o.status <> com.example.ecommerce.enums.OrderStatus.PENDING_PAYMENT
+            group by o.customer.id
+            """)
+    List<Object[]> customerOrderStats(@Param("customerIds") Collection<Long> customerIds,
+                                      @Param("notSpent") Collection<OrderStatus> notSpent);
+
+    @Query("""
+            select count(distinct o.customer.id) from CustomerOrder o
+            where o.customer.role = com.example.ecommerce.enums.Role.CUSTOMER
+              and o.status <> com.example.ecommerce.enums.OrderStatus.PENDING_PAYMENT
+            """)
+    long countCustomersWithOrders();
+
     long countByStatus(OrderStatus status);
 
     long countByStatusNot(OrderStatus status);

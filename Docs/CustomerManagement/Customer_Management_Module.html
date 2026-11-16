@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ShopSphere — Customer Management Module</title>
+<style>
+  @page { size: A4; margin: 18mm 17mm 20mm 17mm; }
+  :root { --navy: #14213d; --blue: #2563eb; --ink: #1f2937; --muted: #6b7280; --line: #cfd6e0; --head: #eef1f5; --warn: #fff7e6; --warn-line: #f59e0b; --ok: #e8f6ee; --ok-ink: #137a3e; }
+  * { box-sizing: border-box; }
+  body { font-family: Calibri, "Segoe UI", Arial, sans-serif; color: var(--ink); font-size: 10.6pt; line-height: 1.42; margin: 0; }
+  h1 { font-size: 23pt; color: var(--navy); margin: 0 0 2pt; letter-spacing: -0.2pt; }
+  .subtitle { font-size: 14pt; color: var(--muted); margin: 0 0 4pt; }
+  .byline { color: var(--muted); margin-bottom: 14pt; }
+  h2 { font-size: 15.5pt; color: var(--navy); margin: 18pt 0 6pt; page-break-after: avoid; }
+  h3 { font-size: 12.3pt; color: var(--blue); margin: 14pt 0 5pt; page-break-after: avoid; }
+  p { margin: 0 0 7pt; }
+  ul, ol { margin: 0 0 8pt; padding-left: 20pt; }
+  li { margin-bottom: 2.5pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 10pt; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  th, td { border: 1px solid var(--line); padding: 5pt 7pt; text-align: left; vertical-align: top; }
+  th { background: var(--head); font-weight: 700; }
+  code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 9.2pt; }
+  pre { background: #f2f4f7; padding: 7pt 9pt; font-family: Consolas, monospace; font-size: 8.5pt; line-height: 1.35; white-space: pre-wrap; margin: 4pt 0 10pt; }
+  pre .c { color: #6b7280; }
+  .note { background: var(--warn); border-left: 4pt solid var(--warn-line); padding: 6pt 9pt; margin: 6pt 0 10pt; }
+  .done { background: var(--ok); color: var(--ok-ink); font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; white-space: nowrap; font-size: 9.5pt; }
+  .new { background: #e8f0fe; color: #1d4ed8; font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; white-space: nowrap; font-size: 8.5pt; }
+  figure { margin: 8pt 0 12pt; text-align: center; page-break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid var(--line); }
+  figcaption { font-style: italic; color: #4b5563; font-size: 9.6pt; margin-top: 4pt; }
+  .page-break { page-break-before: always; }
+  .small { font-size: 9.5pt; color: var(--muted); }
+  a { color: var(--blue); }
+</style>
+</head>
+<body>
+
+<h1>ShopSphere — Customer Management Module</h1>
+<div class="subtitle">Assignment submission and end user documentation</div>
+<div class="byline">Anil Nayak · 16 November 2026</div>
+
+<h2>Submission details</h2>
+<p>This document submits the Customer Management module of ShopSphere, a multi-vendor e-commerce website, with its code repository, hosted link, requirement checklist and user guide.</p>
+<table>
+  <tr><th style="width:32%">Item</th><th>Details</th></tr>
+  <tr><td>Candidate</td><td>Anil Nayak</td></tr>
+  <tr><td>Internship</td><td>ITVedant / Vibgyor Advisors integrated internship</td></tr>
+  <tr><td>Project</td><td>ShopSphere — multi-vendor e-commerce platform</td></tr>
+  <tr><td>Module</td><td>Customer Management (Admin console)</td></tr>
+  <tr><td>Frontend</td><td>React 19, Vite, React Router, Bootstrap 5</td></tr>
+  <tr><td>Backend</td><td>Java 17, Spring Boot 4, Spring Security (JWT), Spring Data JPA</td></tr>
+  <tr><td>Database</td><td>MySQL (database <code>ecommerce_intern</code>, table <code>users</code>)</td></tr>
+</table>
+
+<h2>1. GitHub repository link</h2>
+<p><b>Repository:</b> <a href="https://github.com/anilnayak9969-cmd/ShopSphere">https://github.com/anilnayak9969-cmd/ShopSphere</a></p>
+<p>The repository holds the complete project. Secret settings (database password, JWT secret, email and Razorpay keys, admin access code) are not committed; an example settings file shows what to fill in.</p>
+<table>
+  <tr><th style="width:32%">Folder</th><th>Contents</th></tr>
+  <tr><td><code>Backend/ecommerce</code></td><td>Spring Boot API. The module's code is <code>AdminCustomerController</code>, <code>CustomerAdminService</code> / <code>CustomerAdminServiceImpl</code>, the DTOs <code>CustomerCreateRequest</code>, <code>CustomerUpdateRequest</code>, <code>CustomerResponse</code>, <code>CustomerDetailResponse</code> and <code>CustomerSummaryResponse</code>, the <code>User</code> entity, and the customer queries in <code>UserRepository</code> and <code>OrderRepository</code>. Self-registration is in <code>AuthController</code> / <code>AuthServiceImpl</code>. Tests: <code>CustomerAdminServiceImplTest</code>, <code>AuthServiceRegistrationTest</code>.</td></tr>
+  <tr><td><code>Frontend/ecommerce</code></td><td>React website. The admin screen is <code>src/pages/admin/AdminCustomers.jsx</code>; customers register at <code>src/pages/auth/Register.jsx</code>. API calls are in <code>src/services/adminService.js</code>.</td></tr>
+  <tr><td><code>DataBase</code></td><td><code>queries.sql</code> (section 9: Customer Management SQL)</td></tr>
+  <tr><td><code>Docs/CustomerManagement</code></td><td>This document, its screenshots and the module README</td></tr>
+  <tr><td><code>README.md</code></td><td>Setup steps, features and API reference</td></tr>
+</table>
+
+<h2>2. URL of the module hosted on a free server</h2>
+<p><b>Website:</b> <a href="https://host-shop-sphere.vercel.app/">https://host-shop-sphere.vercel.app/</a></p>
+<p>To try the module, sign in with the admin account below and open <b>Admin console → Customers</b>.</p>
+<table>
+  <tr><th style="width:50%">Login</th><th>Value</th></tr>
+  <tr><td>Admin email</td><td>admin@shopsphere.com</td></tr>
+  <tr><td>Admin password</td><td><i>(shared separately with the evaluator)</i></td></tr>
+</table>
+<div class="note"><b>Hosting status:</b> only the React frontend is deployed on Vercel. The Spring Boot backend and the MySQL database are not online yet, so the hosted site cannot sign in or load customers. The new Customer Management screen appears on the hosted site after the latest code is pushed and redeployed. All screenshots in this document were taken from the complete application running locally with its backend and database.</div>
+
+<h2>3. Requirement checklist — is the module implemented?</h2>
+<p>Every functionality in the assignment is implemented and was tested in the running application. Self-registration and account suspension already existed in ShopSphere; the items marked <span class="new">ADDED</span> were built for this assignment.</p>
+<table>
+  <tr><th style="width:25%">Requirement</th><th>How ShopSphere implements it</th><th style="width:14%">Status</th></tr>
+  <tr><td><b>1. Add a new customer</b><br>Customers register through the frontend, or admins add customers through the admin dashboard</td><td>Customers register at <b>Register → Shop</b> (name, email, mobile, password) and confirm a 6-digit email code. Admins click <b>Add customer</b> on the Customer management page <span class="new">ADDED</span> and enter the name, email, mobile number and a first password; the account is verified and can sign in at once.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>2. Customer dashboard</b><br>All customers with name, email, phone number and order history</td><td><b>Admin → Customers</b> <span class="new">ADDED</span>: summary cards, every customer with name, email, phone, <b>order history</b> (number of orders, amount spent, last order date), join date and status; search by name, email or phone; All / Active / Inactive filter. <b>View</b> opens the customer's personal information, saved addresses and full order list.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>3. Update customer details</b><br>Contact information and account status</td><td><b>Edit</b> <span class="new">ADDED</span> changes the full name, email, mobile number and the Active/Inactive switch. Email stays unique; the customer is notified.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>4. Delete / deactivate customer account</b><br>Soft delete: mark inactive without removing data</td><td><b>Deactivate</b> sets the Boolean <code>active</code> column to 0 after a warning. The customer is signed out and cannot sign in or order; their profile, addresses and orders are kept. <b>Activate</b> brings the account back.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>Database design</b><br>Table <code>users</code></td><td>All assignment columns exist; <code>first_name</code> and <code>last_name</code> were added as columns that MySQL generates from <code>full_name</code> <span class="new">ADDED</span>. See Appendix A.</td><td><span class="done">Implemented</span></td></tr>
+</table>
+
+<h2>4. End user documentation — Customer Management</h2>
+<p>Customer Management keeps track of every shopper on ShopSphere: their personal information, their orders and the state of their account. Administrators use it to add customers, correct contact details, look up a customer's orders when helping them, and switch accounts off and on again.</p>
+<p>With this module the admin can:</p>
+<ul>
+  <li>see every customer with name, email, phone number, number of orders, amount spent and account status</li>
+  <li>see at a glance how many customers are active, inactive, new or have ordered</li>
+  <li>search by name, email or phone and filter by Active or Inactive</li>
+  <li>open a customer to see personal information, saved addresses and order history</li>
+  <li>add a new customer by hand</li>
+  <li>edit a customer's name, email, phone and account status</li>
+  <li>deactivate an account (a soft delete) after a warning, and activate it again</li>
+</ul>
+<p><b>Who uses it:</b> only users with the <b>Admin</b> role. Customers manage their own profile from <b>My account</b>.</p>
+
+<h3>4.1 Customers register themselves</h3>
+<ol>
+  <li>On the website, click <b>Register</b> (or <i>Create an account</i> on the sign-in page).</li>
+  <li>Choose <b>Shop</b>, then enter full name, email, 10-digit mobile number and a password (8+ characters with an uppercase letter, a lowercase letter and a number), and accept the terms.</li>
+  <li>Enter the 6-digit code sent to the email. The account is now active and appears on the admin Customer dashboard.</li>
+</ol>
+<figure><img src="screenshots/c01-register.png"><figcaption>Figure 1 — Customer self-registration: Shop selected, then name, email and mobile number.</figcaption></figure>
+
+<h3>4.2 Open Customer Management</h3>
+<ol>
+  <li>Sign in with the admin account (Login → <b>Admin</b> tab → <b>Sign in as admin</b>).</li>
+  <li>In the left menu, click <b>Customers</b>. The <b>Customer management</b> page opens. (The Customers card on the Overview page links here too.)</li>
+</ol>
+<table>
+  <tr><th style="width:33%">Part of the page</th><th>What it shows</th></tr>
+  <tr><td><b>Add customer</b> button</td><td>Opens the Add a customer form (section 4.3)</td></tr>
+  <tr><td><b>Total customers</b> card</td><td>All customer accounts, and how many joined in the last 30 days</td></tr>
+  <tr><td><b>Active</b> card</td><td>Customers who can sign in and shop</td></tr>
+  <tr><td><b>Inactive</b> card</td><td>Deactivated customers (soft deleted, data kept)</td></tr>
+  <tr><td><b>With orders</b> card</td><td>Customers who have placed at least one order</td></tr>
+  <tr><td>Search box</td><td>Name, email or phone number</td></tr>
+  <tr><td><b>All / Active / Inactive</b></td><td>Show only customers with that account status</td></tr>
+  <tr><td>Table: <b>Customer</b></td><td>Full name and email</td></tr>
+  <tr><td>Table: <b>Phone</b></td><td>Mobile number</td></tr>
+  <tr><td>Table: <b>Order history</b></td><td>Number of orders, amount spent (cancelled and returned orders not counted) and the date of the last order</td></tr>
+  <tr><td>Table: <b>Joined</b></td><td>When the account was created</td></tr>
+  <tr><td>Table: <b>Status</b></td><td><b>Active</b> or <b>Inactive</b>, plus "Email unverified" if the customer has not confirmed their email</td></tr>
+  <tr><td><b>View</b> / <b>Edit</b> / <b>Deactivate</b> / <b>Activate</b></td><td>Actions for each customer (sections 4.4 – 4.7)</td></tr>
+</table>
+<p>The list shows 10 customers per page, newest first.</p>
+<figure><img src="screenshots/c02-customer-dashboard.png"><figcaption>Figure 2 — The Customer management page: summary cards, search, status filter, and each customer's name, email, phone, order history, join date and status.</figcaption></figure>
+
+<h3>4.3 Add a new customer (admin)</h3>
+<ol>
+  <li>Click <b>Add customer</b> at the top right.</li>
+  <li>Fill in the form (see the table below).</li>
+  <li>Click <b>Add customer</b>. A green message confirms: <i>Customer "…" added. They can sign in now.</i> The customer gets a welcome notification asking them to change the password.</li>
+</ol>
+<table>
+  <tr><th style="width:24%">Field</th><th style="width:11%">Required</th><th>What to enter</th></tr>
+  <tr><td>Full name (first and last name)</td><td>Yes</td><td>2–100 characters: letters, spaces and . ' - , e.g. <i>Rahul Mehta</i>. ShopSphere splits it into first name and last name</td></tr>
+  <tr><td>Email</td><td>Yes</td><td>A valid email, unique across all accounts (any capitalisation)</td></tr>
+  <tr><td>Mobile number</td><td>Yes</td><td>10 digits starting with 6–9</td></tr>
+  <tr><td>First password</td><td>Yes</td><td>8–64 characters with an uppercase letter, a lowercase letter and a number. Share it privately; the customer changes it from My account</td></tr>
+</table>
+<figure><img src="screenshots/c03-add-validation.png"><figcaption>Figure 3 — Clicking Add customer on an empty form: each field explains what is needed.</figcaption></figure>
+<figure><img src="screenshots/c04-add-customer.png"><figcaption>Figure 4 — The Add a customer form filled in; the error messages disappear as each field is corrected, and the password rules turn green.</figcaption></figure>
+<figure><img src="screenshots/c05-customer-added.png"><figcaption>Figure 5 — The new customer, Rahul Mehta, appears at the top of the list (Active, 0 orders), and the Total customers card went up by one.</figcaption></figure>
+
+<h3>4.4 View a customer and their order history</h3>
+<ol>
+  <li>Click <b>View</b> in the customer's row.</li>
+  <li>The customer window shows <b>personal information</b> (first name, last name, email and whether it is verified, phone, account status), <b>saved addresses</b>, and the <b>order history</b>: number of orders, amount spent, and the latest orders with date, total and status.</li>
+  <li>From here, click <b>Edit details</b> or <b>Deactivate</b>, or <b>Open Order management</b> to work on an order.</li>
+</ol>
+<figure><img src="screenshots/c06-customer-details.png"><figcaption>Figure 6 — Priya Sharma's customer window: personal information, default address and her 10 orders (₹8,932.77 spent) with their statuses.</figcaption></figure>
+
+<h3>4.5 Update customer details</h3>
+<ol>
+  <li>Click <b>Edit</b> in the customer's row (or <b>Edit details</b> in the customer window).</li>
+  <li>Change the full name, email or mobile number. The <b>Account status</b> switch turns the account Active or Inactive.</li>
+  <li>Click <b>Save changes</b>. A message confirms: <i>Customer "…" updated.</i> The customer is notified that their details were changed.</li>
+</ol>
+<p>The customer's orders keep the name and address they were placed with; the new details are used from now on.</p>
+<figure><img src="screenshots/c07-edit-customer.png"><figcaption>Figure 7 — Editing the customer: the name becomes Rahul Kumar Mehta and the mobile number 9876501234.</figcaption></figure>
+<figure><img src="screenshots/c08-customer-updated.png"><figcaption>Figure 8 — After saving: the new name and phone number in the list.</figcaption></figure>
+
+<h3>4.6 Deactivate (delete) a customer account</h3>
+<p>Deactivating is a <b>soft delete</b>: the Boolean status column (<code>active</code>) is set to false. The customer is signed out and cannot sign in or place orders, but their profile, addresses, reviews and orders stay in the database, so order history and reports remain correct and the account can be brought back.</p>
+<ol>
+  <li>Click <b>Deactivate</b> in the customer's row (or in the customer window).</li>
+  <li>A warning window opens: the customer is signed out and cannot sign in or place orders until the account is activated again; this is a soft delete and their data stays.</li>
+  <li>Click <b>Deactivate</b>. A message confirms: <i>"…" has been deactivated.</i> The status changes to <b>Inactive</b> and the Inactive card goes up by one.</li>
+</ol>
+<figure><img src="screenshots/c09-deactivate-warning.png"><figcaption>Figure 9 — The warning shown before deactivating a customer.</figcaption></figure>
+<figure><img src="screenshots/c10-inactive-filter.png"><figcaption>Figure 10 — The Inactive filter: the deactivated customer is still listed, with an Activate button.</figcaption></figure>
+<figure><img src="screenshots/c11-signin-refused.png"><figcaption>Figure 11 — The deactivated customer tries to sign in and is refused: "This account has been suspended. Please contact support."</figcaption></figure>
+
+<h3>4.7 Activate a customer again</h3>
+<ol>
+  <li>Click <b>Inactive</b> above the table, then <b>Activate</b> in the customer's row.</li>
+  <li>Click <b>Activate</b> in the window. A message confirms: <i>"…" is active again.</i> The customer can sign in with their existing password.</li>
+</ol>
+<figure><img src="screenshots/c12-activate-dialog.png"><figcaption>Figure 12 — Activating the account again.</figcaption></figure>
+<figure><img src="screenshots/c13-customer-reactivated.png"><figcaption>Figure 13 — The customer is Active again.</figcaption></figure>
+
+<h3>4.8 Rules and messages</h3>
+<table>
+  <tr><th style="width:31%">Situation</th><th style="width:39%">Message shown</th><th>What to do</th></tr>
+  <tr><td>Name shorter than 2 or with numbers/symbols</td><td><i>Full name must be 2-100 characters</i> / <i>Use letters, spaces and . ' - only</i></td><td>Correct the name</td></tr>
+  <tr><td>Email not valid</td><td><i>Enter a valid email address</i></td><td>Correct the email</td></tr>
+  <tr><td>Email already used by another account</td><td><i>An account with this email already exists.</i> / <i>Another account already uses this email.</i></td><td>Use a different email, or find the existing account</td></tr>
+  <tr><td>Mobile number not 10 digits starting 6–9</td><td><i>Enter a valid 10-digit mobile number starting with 6-9</i></td><td>Correct the number</td></tr>
+  <tr><td>Weak first password</td><td><i>Password must be 8-64 characters and include an uppercase letter, a lowercase letter and a number</i></td><td>Choose a stronger password</td></tr>
+  <tr><td>Inactive customer signs in</td><td><i>This account has been suspended. Please contact support.</i></td><td>Admin activates the account if appropriate</td></tr>
+  <tr><td>A seller or admin account is opened through the customer API</td><td><i>Customer … was not found.</i></td><td>Manage sellers in Sellers and other accounts in Users</td></tr>
+  <tr><td>A customer or seller calls an admin customer API</td><td>HTTP 403 — <i>You do not have permission to access this resource</i></td><td>Only admins manage customers</td></tr>
+</table>
+
+<h3>4.9 Frequently asked questions</h3>
+<p><b>Why can't I delete a customer permanently?</b> Their orders, payments, refunds and reviews point to the account. Deactivating stops them signing in while keeping that history correct.</p>
+<p><b>What happens to a deactivated customer's orders?</b> They stay as they are; admins can still see and manage them in Order management.</p>
+<p><b>Does a customer added by an admin need to verify their email?</b> No. The admin vouches for the account, so it is marked verified and can sign in at once. Self-registered customers confirm a 6-digit email code.</p>
+<p><b>How are first name and last name stored?</b> ShopSphere stores the full name in <code>full_name</code>; MySQL works out <code>first_name</code> (the first word) and <code>last_name</code> (the rest) automatically, so they are always in step.</p>
+<p><b>Why does "amount spent" differ from the sum of all orders?</b> Cancelled, returned and refunded orders are not counted as money spent.</p>
+<p><b>Can the customer change their own details?</b> Yes, from <b>My account</b>: profile, password and saved addresses.</p>
+
+<h2>5. Screenshots of the running application</h2>
+<p>Figures 1–13 were taken from the complete application running locally: the React frontend on <code>http://localhost:5173</code>, the Spring Boot backend on <code>http://localhost:8080</code> and the MySQL database <code>ecommerce_intern</code>. They follow one customer, Rahul Mehta, from being added by the admin (Figures 3–5), edited (Figures 7–8), deactivated and refused at sign-in (Figures 9–11), to being activated again (Figures 12–13). Passwords are hidden in every screenshot.</p>
+
+<h2 class="page-break">Appendix A: database table</h2>
+<p>Customers are stored in the MySQL table <code>users</code> with <code>role = 'CUSTOMER'</code> (the same table holds sellers, delivery partners and admins). Orders link to the customer through <code>orders.customer_id</code>, and saved addresses through <code>addresses.user_id</code>.</p>
+<table>
+  <tr><th style="width:18%">Assignment column</th><th style="width:20%">Assignment type</th><th style="width:30%">ShopSphere column and type</th><th>Meaning</th></tr>
+  <tr><td>user_id</td><td>int (pk, auto_increment)</td><td><code>user_id</code> BIGINT, primary key, auto increment</td><td>Unique identifier for each customer</td></tr>
+  <tr><td>first_name</td><td>varchar(100)</td><td><code>first_name</code> VARCHAR(100), generated from <code>full_name</code></td><td>Customer's first name</td></tr>
+  <tr><td>last_name</td><td>varchar(100)</td><td><code>last_name</code> VARCHAR(100), generated from <code>full_name</code></td><td>Customer's last name</td></tr>
+  <tr><td>email</td><td>varchar(100)</td><td><code>email</code> VARCHAR(150), unique (the form allows up to 100 characters)</td><td>Customer's email address, used to sign in</td></tr>
+  <tr><td>phone</td><td>varchar(15)</td><td><code>phone</code> VARCHAR(15)</td><td>Customer's phone number</td></tr>
+  <tr><td>created_at</td><td>datetime</td><td><code>created_at</code> DATETIME(6)</td><td>When the account was created</td></tr>
+  <tr><td>updated_at</td><td>datetime</td><td><code>updated_at</code> DATETIME(6)</td><td>When the customer's details were last updated</td></tr>
+  <tr><td>status</td><td>boolean</td><td><code>active</code> BIT(1)</td><td>1 = active customer, 0 = inactive (soft delete)</td></tr>
+</table>
+<p>Other columns: <code>full_name</code> (the name as entered), <code>password</code> (BCrypt hash, never the plain password), <code>role</code>, <code>email_verified</code>. The generated columns are created by <code>SchemaPatcher</code>:</p>
+<pre>ALTER TABLE users ADD COLUMN first_name VARCHAR(100)
+  GENERATED ALWAYS AS (SUBSTRING_INDEX(TRIM(full_name), ' ', 1)) VIRTUAL;
+ALTER TABLE users ADD COLUMN last_name VARCHAR(100)
+  GENERATED ALWAYS AS (TRIM(SUBSTRING(TRIM(full_name),
+                       CHAR_LENGTH(SUBSTRING_INDEX(TRIM(full_name), ' ', 1)) + 1))) VIRTUAL;</pre>
+
+<h2>Appendix B: SQL behind each action</h2>
+<p>The full, tested set is in <code>DataBase/queries.sql</code>, section 9.</p>
+<pre><span class="c">-- Add a new customer (the app stores only a BCrypt hash of the password)</span>
+INSERT INTO users (full_name, email, phone, password, role, email_verified, active, created_at, updated_at)
+VALUES ('Rahul Mehta', 'rahul.mehta@shopsphere.local', '9876543210', '&lt;bcrypt hash&gt;',
+        'CUSTOMER', b'1', b'1', NOW(6), NOW(6));
+
+<span class="c">-- Customer dashboard: name, email, phone, status and order history</span>
+SELECT u.user_id, u.first_name, u.last_name, u.email, u.phone,
+       IF(u.active, 'Active', 'Inactive') AS status,
+       COUNT(o.order_id) AS orders,
+       COALESCE(SUM(CASE WHEN o.status IN ('CANCELLED','RETURNED','REFUNDED') THEN 0
+                         ELSE o.total_amount END), 0) AS total_spent,
+       MAX(o.created_at) AS last_order_at
+FROM users u
+LEFT JOIN orders o ON o.customer_id = u.user_id AND o.status &lt;&gt; 'PENDING_PAYMENT'
+WHERE u.role = 'CUSTOMER'
+GROUP BY u.user_id
+ORDER BY u.created_at DESC LIMIT 10;
+
+<span class="c">-- Search and filter</span>
+SELECT * FROM users
+WHERE role = 'CUSTOMER' AND active = b'1'
+  AND (full_name LIKE '%rahul%' OR email LIKE '%rahul%' OR phone LIKE '%98765%');
+
+<span class="c">-- Update contact details</span>
+UPDATE users SET full_name = 'Rahul Kumar Mehta', phone = '9876501234', updated_at = NOW(6)
+WHERE user_id = 16 AND role = 'CUSTOMER';
+
+<span class="c">-- Deactivate (soft delete) and reactivate</span>
+UPDATE users SET active = b'0', updated_at = NOW(6) WHERE user_id = 16 AND role = 'CUSTOMER';
+UPDATE users SET active = b'1', updated_at = NOW(6) WHERE user_id = 16 AND role = 'CUSTOMER';</pre>
+<p class="small">User 16 is the demo customer Rahul Mehta in the local database used for the screenshots.</p>
+
+<h2>Appendix C: API endpoints of the module</h2>
+<p>All admin endpoints need an admin's JWT (<code>Authorization: Bearer &lt;token&gt;</code>).</p>
+<table>
+  <tr><th style="width:9%">Method</th><th style="width:36%">Path</th><th>Purpose</th></tr>
+  <tr><td>POST</td><td><code>/auth/register</code>, <code>/auth/verify-otp</code></td><td>Customer self-registration with an email code (public)</td></tr>
+  <tr><td>GET</td><td><code>/admin/customers?search=&amp;active=&amp;page=&amp;size=</code></td><td>Customer dashboard. <code>active=true|false</code> filters by status</td></tr>
+  <tr><td>GET</td><td><code>/admin/customers/summary</code></td><td>Total, active, inactive, new in the last 30 days, with orders</td></tr>
+  <tr><td>GET</td><td><code>/admin/customers/{id}</code></td><td>Personal information, saved addresses and latest orders</td></tr>
+  <tr><td>POST</td><td><code>/admin/customers</code></td><td>Add a customer <code>{ fullName, email, phone, password }</code></td></tr>
+  <tr><td>PUT</td><td><code>/admin/customers/{id}</code></td><td>Update <code>{ fullName, email, phone, active }</code></td></tr>
+  <tr><td>PATCH</td><td><code>/admin/customers/{id}/status</code></td><td>Deactivate <code>{"active": false}</code> or activate <code>{"active": true}</code></td></tr>
+</table>
+<p><b>Tests:</b> <code>CustomerAdminServiceImplTest</code> checks that an admin-added customer is verified and active with a hashed password and a tidied name and email, that duplicate emails are refused when adding and when editing, that editing changes contact details and status, that deactivation never deletes the row, that seller accounts cannot be changed through the customer API, and that the order history totals are attached to each customer. <code>AuthServiceRegistrationTest</code> covers self-registration.</p>
+
+</body>
+</html>

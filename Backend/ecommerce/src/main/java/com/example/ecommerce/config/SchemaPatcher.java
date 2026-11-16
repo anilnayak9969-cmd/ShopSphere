@@ -45,5 +45,24 @@ public class SchemaPatcher implements CommandLineRunner {
             log.info("Schema patch: synced orders.active on {} row(s), filled orders.tax_amount on {} row(s)",
                     deactivated + reactivated, taxed);
         }
+
+        // Customer Management: users.first_name / users.last_name, worked out by MySQL from full_name
+        // ("Priya Sharma" -> "Priya" + "Sharma"). Generated columns are read-only and always in step.
+        addGeneratedColumn("users", "first_name",
+                "varchar(100) generated always as (substring_index(trim(full_name), ' ', 1)) virtual");
+        addGeneratedColumn("users", "last_name",
+                "varchar(100) generated always as (trim(substring(trim(full_name), "
+                        + "char_length(substring_index(trim(full_name), ' ', 1)) + 1))) virtual");
+    }
+
+    private void addGeneratedColumn(String table, String column, String definition) {
+        Integer exists = jdbc.queryForObject("""
+                select count(*) from information_schema.columns
+                where table_schema = database() and table_name = ? and column_name = ?
+                """, Integer.class, table, column);
+        if (exists != null && exists == 0) {
+            jdbc.execute("alter table " + table + " add column " + column + " " + definition);
+            log.info("Schema patch: added generated column {}.{}", table, column);
+        }
     }
 }

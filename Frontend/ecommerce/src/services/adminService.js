@@ -13,6 +13,17 @@ const adminService = {
   reassignProducts: (id, targetCategoryId) =>
     api.post(`/admin/categories/${id}/reassign-products`, { targetCategoryId }).then((r) => r.data),
 
+  // Customer Management (dashboard, add, update, deactivate)
+  getCustomers: (params) => api.get('/admin/customers', { params: cleanParams(params) }).then((r) => r.data),
+  getCustomerSummary: () => api.get('/admin/customers/summary').then((r) => r.data),
+  /** { customer, addresses, recentOrders } */
+  getCustomer: (id) => api.get(`/admin/customers/${id}`).then((r) => r.data),
+  /** { fullName, email, phone, password } */
+  createCustomer: (payload) => api.post('/admin/customers', payload).then((r) => r.data),
+  /** { fullName, email, phone, active } */
+  updateCustomer: (id, payload) => api.put(`/admin/customers/${id}`, payload).then((r) => r.data),
+  setCustomerActive: (id, active) => api.patch(`/admin/customers/${id}/status`, { active }).then((r) => r.data),
+
   // Users & sellers
   getUsers: (params) => api.get('/admin/users', { params: cleanParams(params) }).then((r) => r.data),
   setSellerStatus: (id, status) => api.patch(`/admin/sellers/${id}/status`, { status }).then((r) => r.data),
