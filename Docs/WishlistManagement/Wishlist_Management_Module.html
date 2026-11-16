@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ShopSphere — Wishlist Management Module</title>
+<style>
+  @page { size: A4; margin: 18mm 17mm 20mm 17mm; }
+  :root { --navy: #14213d; --blue: #2563eb; --ink: #1f2937; --muted: #6b7280; --line: #cfd6e0; --head: #eef1f5; --warn: #fff7e6; --warn-line: #f59e0b; --ok: #e8f6ee; --ok-ink: #137a3e; }
+  * { box-sizing: border-box; }
+  body { font-family: Calibri, "Segoe UI", Arial, sans-serif; color: var(--ink); font-size: 10.6pt; line-height: 1.42; margin: 0; }
+  h1 { font-size: 23pt; color: var(--navy); margin: 0 0 2pt; letter-spacing: -0.2pt; }
+  .subtitle { font-size: 14pt; color: var(--muted); margin: 0 0 4pt; }
+  .byline { color: var(--muted); margin-bottom: 14pt; }
+  h2 { font-size: 15.5pt; color: var(--navy); margin: 18pt 0 6pt; page-break-after: avoid; }
+  h3 { font-size: 12.3pt; color: var(--blue); margin: 14pt 0 5pt; page-break-after: avoid; }
+  p { margin: 0 0 7pt; }
+  ul, ol { margin: 0 0 8pt; padding-left: 20pt; }
+  li { margin-bottom: 2.5pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 10pt; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  th, td { border: 1px solid var(--line); padding: 5pt 7pt; text-align: left; vertical-align: top; }
+  th { background: var(--head); font-weight: 700; }
+  code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 9.2pt; }
+  pre { background: #f2f4f7; padding: 7pt 9pt; font-family: Consolas, monospace; font-size: 8.5pt; line-height: 1.35; white-space: pre-wrap; margin: 4pt 0 10pt; }
+  pre .c { color: #6b7280; }
+  .note { background: var(--warn); border-left: 4pt solid var(--warn-line); padding: 6pt 9pt; margin: 6pt 0 10pt; }
+  .done { background: var(--ok); color: var(--ok-ink); font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; white-space: nowrap; font-size: 9.5pt; }
+  .new { background: #e8f0fe; color: #1d4ed8; font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; white-space: nowrap; font-size: 8.5pt; }
+  figure { margin: 8pt 0 12pt; text-align: center; page-break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid var(--line); }
+  figcaption { font-style: italic; color: #4b5563; font-size: 9.6pt; margin-top: 4pt; }
+  .page-break { page-break-before: always; }
+  .small { font-size: 9.5pt; color: var(--muted); }
+  a { color: var(--blue); }
+</style>
+</head>
+<body>
+<h1>ShopSphere — Wishlist Management Module</h1>
+<div class="subtitle">Assignment submission and end user documentation</div>
+<div class="byline">Anil Nayak · 16 November 2026</div>
+
+<h2>Submission details</h2>
+<table>
+  <tr><th style="width:32%">Item</th><th>Details</th></tr>
+  <tr><td>Candidate</td><td>Anil Nayak</td></tr>
+  <tr><td>Internship</td><td>ITVedant / Vibgyor Advisors integrated internship</td></tr>
+  <tr><td>Project / Module</td><td>ShopSphere — Wishlist Management (customer account)</td></tr>
+  <tr><td>Stack</td><td>React 19 + Vite · Java 17, Spring Boot 4, JWT · MySQL (<code>ecommerce_intern</code>, table <code>wishlist_items</code>)</td></tr>
+</table>
+
+<h2>1. GitHub repository link</h2>
+<p><b>Repository:</b> <a href="https://github.com/anilnayak9969-cmd/ShopSphere">https://github.com/anilnayak9969-cmd/ShopSphere</a></p>
+<p>Module code: <code>WishlistServiceImpl</code>, <code>CartServiceImpl.moveFromWishlist</code> (move to cart in one transaction), <code>CustomerAccountController</code> (wishlist endpoints), <code>WishlistItem</code>, <code>WishlistItemResponse</code>; frontend <code>WishlistButton.jsx</code>, <code>context/WishlistContext.jsx</code>, <code>pages/customer/Wishlist.jsx</code>; SQL in <code>DataBase/queries.sql</code> section 12; this document in <code>Docs/WishlistManagement</code>.</p>
+
+<h2>2. URL of the module hosted on a free server</h2>
+<p><b>Website:</b> <a href="https://host-shop-sphere.vercel.app/">https://host-shop-sphere.vercel.app/</a> — sign in as a customer and open <b>Wishlist</b> in the header.</p>
+<div class="note"><b>Hosting status:</b> only the React frontend is deployed on Vercel; the backend and database are not online yet. The changes appear there after the latest code is pushed and redeployed. Screenshots were taken from the application running locally.</div>
+
+<h2>3. Requirement checklist — is the module implemented?</h2>
+<p>The wishlist already existed in ShopSphere; the items marked <span class="new">ADDED</span> were built for this assignment.</p>
+<table>
+  <tr><th style="width:24%">Requirement</th><th>How ShopSphere implements it</th><th style="width:14%">Status</th></tr>
+  <tr><td><b>1. Add to wishlist</b> from the product page</td><td><b>Save to wishlist</b> (heart) on the product page and on every product card. Only products on sale can be saved; a product is saved once (unique per customer); up to 100 items.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>2. View wishlist</b>: name, price, availability</td><td><b>Account → Wishlist</b>: photo, brand, product name, price with discount, an <b>availability status</b> badge (In stock / Only N left / Out of stock / No longer available) <span class="new">ADDED</span> and the date saved <span class="new">ADDED</span>.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>3. Remove from wishlist</b></td><td>The bin button on each item, or tapping the heart again anywhere on the site.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>4. Move from wishlist to cart</b></td><td><b>Move to cart</b> adds one unit to the cart (stock checked) and removes it from the wishlist. This is now a single server step, <code>POST /customer/wishlist/{id}/move-to-cart</code>, so it either fully succeeds or nothing changes <span class="new">ADDED</span>. The cart page also offers <b>Save for later</b> (cart → wishlist).</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>Database design</b>: table <code>wishlists</code></td><td>Table <code>wishlist_items</code> with all columns; <code>updated_at</code> <span class="new">ADDED</span>. See Appendix A.</td><td><span class="done">Implemented</span></td></tr>
+</table>
+
+<h2>4. End user documentation — Wishlist Management</h2>
+<p>The wishlist lets a customer keep products they like but are not ready to buy, see whether they are still in stock, and move them into the cart when ready. It is saved on the server, so it follows the customer to any device.</p>
+
+<h3>4.1 Add a product to the wishlist</h3>
+<ol>
+  <li>Sign in as a customer and open a product.</li>
+  <li>Click <b>Save to wishlist</b> (the heart). It fills in and the <b>Wishlist</b> counter in the header goes up. Click it again to remove it.</li>
+</ol>
+<figure><img src="screenshots/w01-add-to-wishlist.png"><figcaption>Figure 1 — Saving "Tales from the Western Ghats" to the wishlist from its product page.</figcaption></figure>
+
+<h3>4.2 View the wishlist</h3>
+<p>Click <b>Wishlist</b> in the header (or <b>Account → Wishlist</b>). Each saved product shows its photo, brand, name, current price and discount, availability and the date it was saved, with <b>Move to cart</b> and a remove (bin) button.</p>
+<table>
+  <tr><th style="width:30%">Availability badge</th><th>Meaning</th></tr>
+  <tr><td>In stock</td><td>More than 5 units available</td></tr>
+  <tr><td>Only N left</td><td>5 or fewer units — buy soon</td></tr>
+  <tr><td>Out of stock</td><td>None left; <b>Move to cart</b> is disabled</td></tr>
+  <tr><td>No longer available</td><td>The product was taken off sale; it can only be removed</td></tr>
+</table>
+<figure><img src="screenshots/w02-wishlist.png"><figcaption>Figure 2 — The wishlist: product name, price, availability status and saved date.</figcaption></figure>
+
+<h3>4.3 Move a product to the cart</h3>
+<ol>
+  <li>Click <b>Move to cart</b> on a product that is in stock.</li>
+  <li>One unit is added to the cart and the product leaves the wishlist; a message confirms it and both header counters update.</li>
+  <li>If there is not enough stock the move is refused (<i>"… is out of stock."</i>) and nothing changes.</li>
+</ol>
+<figure><img src="screenshots/w03-moved-to-cart.png"><figcaption>Figure 3 — After Move to cart: the book left the wishlist and the cart counter went up.</figcaption></figure>
+<figure><img src="screenshots/w05-cart-after-move.png"><figcaption>Figure 4 — The cart now contains the moved book.</figcaption></figure>
+
+<h3>4.4 Remove a product</h3>
+<p>Click the bin button on the product (or tap its heart anywhere on the site). It disappears and a message confirms it.</p>
+<figure><img src="screenshots/w04-removed.png"><figcaption>Figure 5 — After removing the kettlebell from the wishlist.</figcaption></figure>
+
+<h3>4.5 Rules and messages</h3>
+<table>
+  <tr><th style="width:40%">Situation</th><th>Result</th></tr>
+  <tr><td>Saving a product that is not on sale</td><td><i>This product is not available.</i></td></tr>
+  <tr><td>Saving the same product twice</td><td>Ignored — it is kept once</td></tr>
+  <tr><td>More than 100 saved products</td><td><i>Your wishlist can hold up to 100 items.</i></td></tr>
+  <tr><td>Move to cart without enough stock / over 10 units</td><td><i>… is out of stock.</i> / <i>You can buy at most 10 units …</i>; the wishlist is unchanged</td></tr>
+  <tr><td>Wishlist used by a non-customer</td><td>HTTP 403 — only customers have a wishlist</td></tr>
+</table>
+
+<h2>5. Screenshots of the running application</h2>
+<p>Figures 1–5 were taken from the application running locally (React on <code>localhost:5173</code>, Spring Boot on <code>localhost:8080</code>, MySQL <code>ecommerce_intern</code>) with the demo customer Priya Sharma.</p>
+
+<h2 class="page-break">Appendix A: database table</h2>
+<table>
+  <tr><th style="width:20%">Assignment column</th><th style="width:20%">Assignment type</th><th style="width:30%">ShopSphere column (<code>wishlist_items</code>)</th><th>Meaning</th></tr>
+  <tr><td>wishlist_id</td><td>int (pk, auto_increment)</td><td><code>wishlist_item_id</code> BIGINT PK</td><td>Unique identifier for each saved product</td></tr>
+  <tr><td>customer_id</td><td>int (fk)</td><td><code>user_id</code> BIGINT FK → <code>users</code></td><td>The customer</td></tr>
+  <tr><td>product_id</td><td>int (fk)</td><td><code>product_id</code> BIGINT FK → <code>products</code></td><td>The saved product; <code>(user_id, product_id)</code> is unique</td></tr>
+  <tr><td>created_at</td><td>datetime</td><td><code>created_at</code> DATETIME(6)</td><td>When the product was added</td></tr>
+  <tr><td>updated_at</td><td>datetime</td><td><code>updated_at</code> DATETIME(6)</td><td>When the entry was last updated</td></tr>
+</table>
+<p>ShopSphere stores one row per saved product (a customer's wishlist is all their rows), which is the same data as the assignment's <code>wishlists</code> table.</p>
+
+<h2>Appendix B: SQL behind each action</h2>
+<pre><span class="c">-- Add (kept once per customer)</span>
+INSERT IGNORE INTO wishlist_items (user_id, product_id, created_at, updated_at) VALUES (8, 62, NOW(6), NOW(6));
+<span class="c">-- View with availability</span>
+SELECT p.product_name, p.selling_price,
+       CASE WHEN p.active = b'0' THEN 'No longer available' WHEN p.stock_quantity = 0 THEN 'Out of stock'
+            WHEN p.stock_quantity &lt;= 5 THEN CONCAT('Only ', p.stock_quantity, ' left') ELSE 'In stock' END AS availability
+FROM wishlist_items w JOIN products p ON p.product_id = w.product_id WHERE w.user_id = 8;
+<span class="c">-- Remove</span>
+DELETE FROM wishlist_items WHERE user_id = 8 AND product_id = 62;
+<span class="c">-- Move to cart (one transaction): add to cart_items if in stock, then delete from wishlist_items</span></pre>
+
+<h2>Appendix C: API endpoints (customer, JWT required)</h2>
+<table>
+  <tr><th style="width:10%">Method</th><th style="width:42%">Path</th><th>Purpose</th></tr>
+  <tr><td>GET</td><td><code>/customer/wishlist</code></td><td>View the wishlist with availability</td></tr>
+  <tr><td>POST</td><td><code>/customer/wishlist/{productId}</code></td><td>Add a product</td></tr>
+  <tr><td>DELETE</td><td><code>/customer/wishlist/{productId}</code></td><td>Remove a product</td></tr>
+  <tr><td>POST</td><td><code>/customer/wishlist/{productId}/move-to-cart</code></td><td>Move to cart in one step</td></tr>
+  <tr><td>POST</td><td><code>/customer/cart/items/{id}/save-for-later</code></td><td>Cart → wishlist</td></tr>
+</table>
+<h2>Appendix D: testing</h2>
+<p><b>Unit tests</b> — <code>WishlistManagementTest</code>, 10 tests, all passing: adding a product that is on sale saves it and adding it twice keeps one entry; products not on sale are refused; the wishlist holds at most 100 products; the view shows name, price and the four availability states; remove deletes the entry and removing something not saved is harmless; move to cart adds 1 unit and removes it from the wishlist; an out-of-stock move fails and leaves the wishlist unchanged; moving a product that is not saved is refused. The full backend suite (107 tests) passes.</p>
+<p><b>End-to-end checks</b> against the running application, 11 checks, all passing:</p>
+<table>
+  <tr><th>Check</th><th style="width:38%">Result</th></tr>
+  <tr><td>Add a product / add it twice</td><td>Saved once</td></tr>
+  <tr><td>Add an unknown product</td><td>404 — <i>This product is not available.</i></td></tr>
+  <tr><td>View: name, price, availability</td><td>Monsoon Letters — ₹339.15 — "In stock"</td></tr>
+  <tr><td>Out-of-stock product</td><td>Shown as "Out of stock"</td></tr>
+  <tr><td>Move an out-of-stock product to the cart</td><td>409 — <i>… is out of stock.</i>; wishlist unchanged</td></tr>
+  <tr><td>Move a product that is not saved</td><td>404 — <i>That product is not in your wishlist.</i></td></tr>
+  <tr><td>Move to cart</td><td>1 unit in the cart, removed from the wishlist</td></tr>
+  <tr><td>Remove</td><td>Removed</td></tr>
+  <tr><td>Seller / signed-out user</td><td>403 / 401</td></tr>
+</table>
+</body>
+</html>

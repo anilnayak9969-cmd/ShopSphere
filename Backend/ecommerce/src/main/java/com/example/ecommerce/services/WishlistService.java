@@ -12,4 +12,6 @@ public interface WishlistService {
     List<WishlistItemResponse> add(Long userId, Long productId);
 
     List<WishlistItemResponse> remove(Long userId, Long productId);
+
+    boolean contains(Long userId, Long productId);
 }

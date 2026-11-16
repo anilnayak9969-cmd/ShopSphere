@@ -40,6 +40,7 @@ import lombok.RequiredArgsConstructor;
 public class CustomerAccountController {
 
     private final WishlistService wishlistService;
+    private final com.example.ecommerce.services.CartService cartService;
     private final AddressService addressService;
     private final ReviewService reviewService;
     private final CouponService couponService;
@@ -55,6 +56,13 @@ public class CustomerAccountController {
     public List<WishlistItemResponse> addToWishlist(@AuthenticationPrincipal UserPrincipal user,
                                                     @PathVariable Long productId) {
         return wishlistService.add(user.getId(), productId);
+    }
+
+    /** Wishlist Management: adds one unit to the cart (stock checked) and removes it from the wishlist, in one step. */
+    @PostMapping("/wishlist/{productId}/move-to-cart")
+    public List<WishlistItemResponse> moveToCart(@AuthenticationPrincipal UserPrincipal user, @PathVariable Long productId) {
+        cartService.moveFromWishlist(user.getId(), productId);
+        return wishlistService.getWishlist(user.getId());
     }
 
     @DeleteMapping("/wishlist/{productId}")

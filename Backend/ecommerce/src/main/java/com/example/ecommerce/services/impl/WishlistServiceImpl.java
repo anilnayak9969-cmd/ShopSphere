@@ -58,4 +58,10 @@ public class WishlistServiceImpl implements WishlistService {
         wishlistRepository.findByUserIdAndProductProductId(userId, productId).ifPresent(wishlistRepository::delete);
         return getWishlist(userId);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean contains(Long userId, Long productId) {
+        return wishlistRepository.existsByUserIdAndProductProductId(userId, productId);
+    }
 }

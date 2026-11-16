@@ -43,9 +43,13 @@ export function WishlistProvider({ children }) {
     setItems(await wishlistService.remove(productId))
   }, [])
 
+  const moveToCart = useCallback(async (productId) => {
+    setItems(await wishlistService.moveToCart(productId))
+  }, [])
+
   const value = useMemo(
-    () => ({ items, ids, count: ids.size, isCustomer, refresh, toggle, remove, has: (id) => ids.has(id) }),
-    [items, ids, isCustomer, refresh, toggle, remove],
+    () => ({ items, ids, count: ids.size, isCustomer, refresh, toggle, remove, moveToCart, has: (id) => ids.has(id) }),
+    [items, ids, isCustomer, refresh, toggle, remove, moveToCart],
   )
 
   return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>

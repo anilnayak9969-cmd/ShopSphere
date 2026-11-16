@@ -47,6 +47,14 @@ Built against the given `users` table (`user_id`, `first_name`, `last_name`, `em
 3. **Update customer details**: edit name, email, mobile number and account status (email stays unique).
 4. **Deactivate**: a **soft delete** through `active` after a warning. The customer is refused at sign-in, and their profile, addresses and orders are kept. **Activate** restores the account.
 
+### Module 7 — Wishlist Management (assignment module)
+Table `wishlist_items` (`wishlist_item_id`, `user_id`, `product_id`, `created_at`, `updated_at`). Guide, screenshots and PDF: [`Docs/WishlistManagement`](Docs/WishlistManagement/README.md).
+
+1. **Add to wishlist** with the heart on the product page or any product card (on-sale products only, saved once).
+2. **View wishlist**: name, price, discount, availability badge (In stock / Only N left / Out of stock / No longer available) and saved date.
+3. **Remove** with the bin button or the heart.
+4. **Move to cart** in one server step (`POST /customer/wishlist/{productId}/move-to-cart`, stock checked); **Save for later** moves a cart item back.
+
 ### Module 6 — Cart Management (assignment module)
 Cart stored as `carts` (one per customer, with `total_price`, `total_quantity`, `updated_at` = last activity) + `cart_items` (product, quantity, `line_total`). Full guide, screenshots and the submission PDF: [`Docs/CartManagement`](Docs/CartManagement/README.md).
 
@@ -216,7 +224,8 @@ Docs/
 ├── OrderManagement/                    Order Management README, submission PDF (+ HTML source) and screenshots
 ├── CustomerManagement/                 Customer Management README, submission PDF (+ HTML source) and screenshots
 ├── PaymentManagement/                  Payment Management README, submission PDF (+ HTML source) and screenshots
-└── CartManagement/                     Cart Management README, submission PDF (+ HTML source) and screenshots
+├── CartManagement/                     Cart Management README, submission PDF (+ HTML source) and screenshots
+└── WishlistManagement/                 Wishlist Management README, submission PDF (+ HTML source) and screenshots
 ```
 
 ---
@@ -231,7 +240,7 @@ In MySQL Workbench open `DataBase/Internship_Ecommerce.sql` and execute it, or r
 ```bash
 mysql -u root -p < DataBase/Internship_Ecommerce.sql
 ```
-This creates `ecommerce_intern`, all 23 tables, the platform settings row and the `WELCOME10` coupon. Then load the catalogue with `mysql -u root -p ecommerce_intern < DataBase/catalog_data.sql`, or just start the backend, which loads the same catalogue itself. It is safe to run more than once. The backend also creates and updates tables automatically, so this step is optional. `DataBase/queries.sql` contains ready-to-run queries for the Category Management module (section 1), the Product Management module (section 7), the Order Management module (section 8), the Customer Management module (section 9), the Payment Management module (section 10), the Cart Management module (section 11) and reports.
+This creates `ecommerce_intern`, all 23 tables, the platform settings row and the `WELCOME10` coupon. Then load the catalogue with `mysql -u root -p ecommerce_intern < DataBase/catalog_data.sql`, or just start the backend, which loads the same catalogue itself. It is safe to run more than once. The backend also creates and updates tables automatically, so this step is optional. `DataBase/queries.sql` contains ready-to-run queries for the Category Management module (section 1), the Product Management module (section 7), the Order Management module (section 8), the Customer Management module (section 9), the Payment Management module (section 10), the Cart Management module (section 11), the Wishlist Management module (section 12) and reports.
 
 ### 2. Backend secrets
 Copy `Backend/ecommerce/src/main/resources/application-secrets.example.properties` to `application-secrets.properties` in the same folder and fill it in. This file is git-ignored.
@@ -378,7 +387,7 @@ Money uses `DECIMAL(12,2)`. Products and categories are never hard-deleted, so o
 ```bash
 cd Backend/ecommerce && ./mvnw test
 ```
-There are **85 tests**: Payment Management rules (Razorpay method mapping incl. PayPal, masked card/UPI details, every refund logged with its Razorpay refund ID, failed refunds logged but not counted, admin refunds only for cancelled/returned orders and never above what was paid), Customer Management rules (admin-added customers verified and active with a hashed password, duplicate emails refused, contact and status updates, soft-delete deactivation, customer-only access, order history totals), Order Management rules (GST included in the total, dashboard status groups, admin Pending → Shipped jumps with every step recorded, no backward moves, customer cancel until shipping, no admin cancel after shipping), role-based registration (customer, seller, delivery partner and admin access-code rules, vehicle-number formats), Category Management rules (including subcategory cycles), Product Management rules (admin add is approved and live, unapproved stores and duplicate SKUs refused, updates keep approval, inactive categories refused, deactivation is a soft delete), OTP security, Razorpay checkout and webhook signatures, idempotent payment verification, the sold-out refund path, coupon rules (caps, minimum order, expiry, usage limits, one use per customer), verified-purchase reviews, pricing, shipping and commission rules, COD checkout, and item-level order status derivation. The `contextLoads` test needs MySQL running.
+There are **107 tests**: Wishlist Management rules (add once, on-sale only, 100-item limit, availability states, remove, move to cart in one transaction with the wishlist unchanged on failure), Cart Management rules (stock checks on add and update, stored totals, quantity merge, remove, ownership, Active/Abandoned/Empty, abandonment rate and top products, one reminder per abandoned cart), Payment Management rules (Razorpay method mapping incl. PayPal, masked card/UPI details, every refund logged with its Razorpay refund ID, failed refunds logged but not counted, admin refunds only for cancelled/returned orders and never above what was paid), Customer Management rules (admin-added customers verified and active with a hashed password, duplicate emails refused, contact and status updates, soft-delete deactivation, customer-only access, order history totals), Order Management rules (GST included in the total, dashboard status groups, admin Pending → Shipped jumps with every step recorded, no backward moves, customer cancel until shipping, no admin cancel after shipping), role-based registration (customer, seller, delivery partner and admin access-code rules, vehicle-number formats), Category Management rules (including subcategory cycles), Product Management rules (admin add is approved and live, unapproved stores and duplicate SKUs refused, updates keep approval, inactive categories refused, deactivation is a soft delete), OTP security, Razorpay checkout and webhook signatures, idempotent payment verification, the sold-out refund path, coupon rules (caps, minimum order, expiry, usage limits, one use per customer), verified-purchase reviews, pricing, shipping and commission rules, COD checkout, and item-level order status derivation. The `contextLoads` test needs MySQL running.
 
 Frontend: `npm run lint` and `npm run build`.
 

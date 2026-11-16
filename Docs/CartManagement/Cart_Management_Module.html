@@ -187,5 +187,18 @@ FROM carts c JOIN users u ON u.user_id = c.user_id WHERE u.role = 'CUSTOMER';</p
   <tr><td>GET</td><td><code>/admin/carts/{id}</code></td><td>Admin: one cart in full</td></tr>
   <tr><td>POST</td><td><code>/admin/carts/{id}/remind</code></td><td>Admin: notify the customer about an abandoned cart</td></tr>
 </table>
+<h2>Appendix D: testing</h2>
+<p><b>Unit tests</b> — <code>CartManagementTest</code>, 12 tests, all passing: adding checks stock and stores the totals; adding above the stock or an out-of-stock product is refused; adding the same product again increases its quantity; updating recalculates the total, and updating above the stock is refused with the quantity unchanged; removing recalculates the total; another customer's cart item cannot be changed; carts are classed as Active, Abandoned or Empty; the summary works out the abandoned value, the abandonment rate (1 ÷ (1 + 7) = 12.5%) and the most abandoned products; reminders are only for abandoned carts and are sent once. The full backend suite (107 tests) passes.</p>
+<p><b>End-to-end checks</b> against the running application, 8 checks, all passing:</p>
+<table>
+  <tr><th>Check</th><th style="width:42%">Result</th></tr>
+  <tr><td>Add above the stock</td><td>409 — <i>Only 3 unit(s) of Nordic Dome Pendant Light (White) are left.</i></td></tr>
+  <tr><td>Add to cart</td><td>2 units added</td></tr>
+  <tr><td>Update quantity 2 → 3</td><td>Total ₹7,521.01 → ₹7,920.21 (+₹399.20)</td></tr>
+  <tr><td>Update to 11 units</td><td>400 — refused (10-unit limit)</td></tr>
+  <tr><td>Remove</td><td>Total recalculated</td></tr>
+  <tr><td>Admin summary / abandoned filter</td><td>1 active, 1 abandoned, rate 12.5%</td></tr>
+  <tr><td>Customer calls the admin cart API</td><td>403</td></tr>
+</table>
 </body>
 </html>

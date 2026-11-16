@@ -116,6 +116,11 @@ public class Product extends AuditableEntity {
     @Column(name = "sold_count", nullable = false, columnDefinition = "int not null default 0")
     private int soldCount;
 
+    /** Shipping Management: packed weight in kg, used to work out the shipping cost. */
+    @Column(name = "weight_kg", nullable = false, precision = 8, scale = 2,
+            columnDefinition = "decimal(8,2) not null default 0.50")
+    private BigDecimal weightKg = new BigDecimal("0.50");
+
     public void replaceSpecifications(List<String[]> rows) {
         specifications.clear();
         int order = 0;

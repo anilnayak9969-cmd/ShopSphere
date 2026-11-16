@@ -87,6 +87,32 @@ public class OrderSupport {
                 }
             }
         }
+        syncShipment(order);
+    }
+
+    /**
+     * Shipping Management: keeps the order's shipping record in step with its items — status, courier and
+     * tracking number (from the first shipped item when none is set), shipped and delivered times.
+     */
+    public static void syncShipment(CustomerOrder order) {
+        com.example.ecommerce.entites.Shipment shipment = order.getShipment();
+        if (shipment == null) {
+            return;
+        }
+        com.example.ecommerce.enums.ShippingStatus status =
+                com.example.ecommerce.enums.ShippingStatus.fromOrder(order.getStatus(), shipment.getShippingStatus());
+        shipment.setShippingStatus(status);
+        OrderItem shipped = order.getItems().stream().filter(i -> i.getTrackingNumber() != null).findFirst().orElse(null);
+        if (shipped != null && (shipment.getTrackingNumber() == null || shipment.getTrackingNumber().isBlank())) {
+            shipment.setCourierService(shipped.getCourierName());
+            shipment.setTrackingNumber(shipped.getTrackingNumber());
+        }
+        if (status.isShipped() && shipment.getShippedAt() == null) {
+            shipment.setShippedAt(shipped != null && shipped.getShippedAt() != null ? shipped.getShippedAt() : LocalDateTime.now());
+        }
+        if (status == com.example.ecommerce.enums.ShippingStatus.DELIVERED && shipment.getDeliveredAt() == null) {
+            shipment.setDeliveredAt(order.getDeliveredAt() != null ? order.getDeliveredAt() : LocalDateTime.now());
+        }
     }
 
     private Map<Long, Product> lock(Collection<OrderItem> items) {

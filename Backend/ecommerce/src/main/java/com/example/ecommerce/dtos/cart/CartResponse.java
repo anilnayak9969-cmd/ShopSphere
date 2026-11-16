@@ -11,5 +11,7 @@ public record CartResponse(
         BigDecimal total,
         BigDecimal freeShippingThreshold,
         boolean checkoutAllowed,
-        boolean hasPriceChanges) {
+        boolean hasPriceChanges,
+        /* Shipping Management: total weight of the buyable items, used to price shipping. */
+        BigDecimal weightKg) {
 }

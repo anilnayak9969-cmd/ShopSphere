@@ -42,8 +42,19 @@ public class WishlistItem {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** Wishlist Management: when this entry was last changed. */
+    @Column(name = "updated_at", nullable = false,
+            columnDefinition = "datetime(6) not null default current_timestamp(6)")
+    private LocalDateTime updatedAt;
+
     @PrePersist
     void onCreate() {
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = this.createdAt;
+    }
+
+    @jakarta.persistence.PreUpdate
+    void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

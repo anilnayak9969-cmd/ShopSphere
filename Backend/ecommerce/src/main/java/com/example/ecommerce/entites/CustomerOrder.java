@@ -122,6 +122,15 @@ public class CustomerOrder extends AuditableEntity {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
+    /** Shipping Management: the order's shipping record (saved together with the order). */
+    @jakarta.persistence.OneToOne(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Shipment shipment;
+
+    public void attachShipment(Shipment shipment) {
+        shipment.setOrder(this);
+        this.shipment = shipment;
+    }
+
     public void addItem(OrderItem item) {
         item.setOrder(this);
         items.add(item);

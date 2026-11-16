@@ -91,7 +91,9 @@ public class CouponServiceImpl implements CouponService {
         }
         AppliedCoupon applied = resolve(userId, code, cart.subtotal());
         BigDecimal afterDiscount = cart.subtotal().subtract(applied.discount());
-        BigDecimal shipping = PricingPolicy.shippingFor(afterDiscount, settingsService.get());
+        BigDecimal shipping = com.example.ecommerce.services.ShippingCalculator.quote(afterDiscount, cart.weightKg(),
+                com.example.ecommerce.enums.DeliveryZone.METRO, com.example.ecommerce.enums.ShippingMethod.STANDARD,
+                settingsService.get(), java.time.LocalDate.now()).cost();
         return new CouponQuote(applied.coupon().getCode(), applied.coupon().getDescription(), cart.subtotal(),
                 applied.discount(), shipping, afterDiscount.add(shipping));
     }

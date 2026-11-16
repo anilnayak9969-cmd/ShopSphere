@@ -791,3 +791,40 @@ WHERE c.updated_at < NOW() - INTERVAL 24 HOUR
 GROUP BY p.product_id
 ORDER BY carts DESC, value DESC
 LIMIT 5;
+-- =====================================================================
+-- 12. WISHLIST MANAGEMENT MODULE (assignment)
+--    Assignment "wishlists" -> ShopSphere wishlist_items:
+--    wishlist_id -> wishlist_item_id, customer_id -> user_id, product_id, created_at, updated_at
+--    (user_id, product_id) is UNIQUE, so a product is saved only once.
+-- =====================================================================
+
+-- 12.1 Add to wishlist (ignored if already saved)
+INSERT IGNORE INTO wishlist_items (user_id, product_id, created_at, updated_at)
+SELECT u.user_id, 62, NOW(6), NOW(6) FROM users u WHERE u.email = 'demo.customer@shopsphere.local';
+
+-- 12.2 View wishlist: product name, price and availability status
+SELECT w.wishlist_item_id, p.product_name, p.selling_price AS price,
+       CASE WHEN p.active = b'0' OR p.approval_status <> 'APPROVED' THEN 'No longer available'
+            WHEN p.stock_quantity = 0 THEN 'Out of stock'
+            WHEN p.stock_quantity <= 5 THEN CONCAT('Only ', p.stock_quantity, ' left')
+            ELSE 'In stock' END AS availability,
+       w.created_at AS saved_at
+FROM wishlist_items w JOIN products p ON p.product_id = w.product_id
+WHERE w.user_id = (SELECT user_id FROM users WHERE email = 'demo.customer@shopsphere.local')
+ORDER BY w.created_at DESC;
+
+-- 12.3 Remove from wishlist
+DELETE FROM wishlist_items
+WHERE user_id = (SELECT user_id FROM (SELECT user_id FROM users WHERE email = 'demo.customer@shopsphere.local') u)
+  AND product_id = 62;
+
+-- 12.4 Move from wishlist to cart (in stock only), in one transaction
+--      INSERT INTO cart_items (cart_id, product_id, quantity, price_at_add, line_total, added_at, updated_at)
+--      SELECT <cart_id>, product_id, 1, selling_price, selling_price, NOW(6), NOW(6)
+--      FROM products WHERE product_id = <id> AND stock_quantity >= 1
+--      ON DUPLICATE KEY UPDATE quantity = quantity + 1;
+--      DELETE FROM wishlist_items WHERE user_id = <customer> AND product_id = <id>;
+
+-- 12.5 Most wished-for products
+SELECT p.product_name, COUNT(*) AS saved_by FROM wishlist_items w JOIN products p ON p.product_id = w.product_id
+GROUP BY p.product_id ORDER BY saved_by DESC LIMIT 5;

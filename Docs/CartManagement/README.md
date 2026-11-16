@@ -57,3 +57,25 @@ Also `cart_items.price_at_add` (price-change notice) and `carts.reminder_sent_at
 | Admin | `controller/AdminCartController.java`, `services/CartAdminService.java`, `services/impl/CartAdminServiceImpl.java`, `dtos/cart/AdminCartResponse.java`, `AdminCartDetailResponse.java`, `CartSummaryResponse.java` |
 | Checkout link | `services/impl/CheckoutServiceImpl.java` removes bought items and refreshes the totals |
 | Frontend | `src/pages/ProductDetails.jsx`, `src/pages/Cart.jsx`, `src/context/CartContext.jsx`, `src/pages/admin/AdminCarts.jsx`, `src/services/adminService.js` |
+| Tests | `CartManagementTest` (12 tests) |
+
+## Testing
+
+**Unit tests** — `CartManagementTest` (12, all passing):
+
+- adding to the cart checks stock and stores `total_price` / `total_quantity` / `line_total`
+- adding above the stock, or an out-of-stock product, is refused
+- adding the same product again increases its quantity
+- updating the quantity recalculates the total; updating above the stock is refused and leaves the quantity unchanged
+- removing an item recalculates the total
+- another customer's cart item cannot be changed
+- carts are classed as Active, Abandoned or Empty
+- the summary works out the abandoned value, the abandonment rate (1 ÷ (1 + 7) = 12.5%) and the most abandoned products
+- reminders are only for abandoned carts, and a cart is reminded only once
+
+**End-to-end checks** against the running app (8 cart checks, all passing): adding above stock refused (409), add, update recalculates the total, more than 10 units refused (400), remove recalculates the total, admin summary, abandoned filter, customer refused from the admin API (403).
+
+```bash
+cd Backend/ecommerce
+mvnw.cmd test -Dtest=CartManagementTest
+```

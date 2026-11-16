@@ -1,6 +1,7 @@
 package com.example.ecommerce.services.impl;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +21,10 @@ import com.example.ecommerce.repositories.CartRepository;
 import com.example.ecommerce.repositories.ProductRepository;
 import com.example.ecommerce.repositories.UserRepository;
 import com.example.ecommerce.services.CartService;
+import com.example.ecommerce.enums.DeliveryZone;
+import com.example.ecommerce.enums.ShippingMethod;
 import com.example.ecommerce.services.PricingPolicy;
+import com.example.ecommerce.services.ShippingCalculator;
 import com.example.ecommerce.services.SettingsService;
 import com.example.ecommerce.services.WishlistService;
 
@@ -109,6 +113,17 @@ public class CartServiceImpl implements CartService {
         return save(cart);
     }
 
+    @Override
+    @Transactional
+    public CartResponse moveFromWishlist(Long userId, Long productId) {
+        if (!wishlistService.contains(userId, productId)) {
+            throw ApiException.notFound("That product is not in your wishlist.");
+        }
+        CartResponse cart = addItem(userId, new AddToCartRequest(productId, 1)); // throws if out of stock
+        wishlistService.remove(userId, productId);
+        return cart;
+    }
+
     /** Recalculates the stored totals, records the activity time, saves, and returns the live cart. */
     private CartResponse save(Cart cart) {
         refreshTotals(cart);
@@ -180,6 +195,7 @@ public class CartServiceImpl implements CartService {
         int count = 0;
         boolean anyAvailable = false;
         boolean anyPriceChanged = false;
+        BigDecimal weight = BigDecimal.ZERO;
 
         for (CartItem item : cart.getItems()) {
             Product p = item.getProduct();
@@ -199,6 +215,7 @@ public class CartServiceImpl implements CartService {
             BigDecimal lineTotal = PricingPolicy.lineTotal(p.getSellingPrice(), item.getQuantity());
             if (available) {
                 subtotal = subtotal.add(lineTotal);
+                weight = weight.add(p.getWeightKg().multiply(BigDecimal.valueOf(item.getQuantity())));
                 count += item.getQuantity();
                 anyAvailable = true;
                 anyPriceChanged |= priceChanged;
@@ -209,13 +226,16 @@ public class CartServiceImpl implements CartService {
                     priceChanged ? item.getPriceAtAdd() : null));
         }
         boolean allAvailable = items.stream().allMatch(CartItemResponse::available);
-        BigDecimal shipping = PricingPolicy.shippingFor(subtotal, settings);
+        // Estimate before an address is chosen: standard delivery to a metro city. Checkout prices it exactly.
+        BigDecimal shipping = ShippingCalculator.quote(subtotal, weight, DeliveryZone.METRO, ShippingMethod.STANDARD,
+                settings, LocalDate.now()).cost();
         return new CartResponse(items, count, subtotal.setScale(2), shipping, subtotal.add(shipping).setScale(2),
-                settings.getFreeShippingThreshold(), anyAvailable && allAvailable, anyPriceChanged);
+                settings.getFreeShippingThreshold(), anyAvailable && allAvailable, anyPriceChanged,
+                weight.setScale(2, java.math.RoundingMode.HALF_UP));
     }
 
     private static CartResponse empty(PlatformSettings settings) {
         BigDecimal zero = BigDecimal.ZERO.setScale(2);
-        return new CartResponse(List.of(), 0, zero, zero, zero, settings.getFreeShippingThreshold(), false, false);
+        return new CartResponse(List.of(), 0, zero, zero, zero, settings.getFreeShippingThreshold(), false, false, zero);
     }
 }

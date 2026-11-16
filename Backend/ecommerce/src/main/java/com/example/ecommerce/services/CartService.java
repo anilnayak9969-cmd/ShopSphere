@@ -18,4 +18,10 @@ public interface CartService {
 
     /** The customer has seen the updated prices; clears the "price changed" flags. */
     CartResponse acknowledgePrices(Long userId);
+
+    /**
+     * Wishlist Management: moves a saved product into the cart (one unit, stock checked) and removes it from the
+     * wishlist, in one transaction — if the cart refuses it, the wishlist is left unchanged.
+     */
+    CartResponse moveFromWishlist(Long userId, Long productId);
 }

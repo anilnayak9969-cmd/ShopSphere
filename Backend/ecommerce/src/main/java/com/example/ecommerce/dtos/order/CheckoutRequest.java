@@ -21,9 +21,15 @@ public record CheckoutRequest(
         /* Optional. Re-validated on the server; the browser never sends the discount amount. */
         @Size(max = 30) String couponCode,
         /* RAZORPAY (default) or COD. COD is only allowed when enabled in platform settings. */
-        PaymentMethod paymentMethod) {
+        PaymentMethod paymentMethod,
+        /* Shipping Management: STANDARD (default) or EXPRESS. The server prices it from weight and address. */
+        com.example.ecommerce.enums.ShippingMethod shippingMethod) {
 
     public PaymentMethod method() {
         return paymentMethod == null ? PaymentMethod.RAZORPAY : paymentMethod;
+    }
+
+    public com.example.ecommerce.enums.ShippingMethod shipping() {
+        return shippingMethod == null ? com.example.ecommerce.enums.ShippingMethod.STANDARD : shippingMethod;
     }
 }

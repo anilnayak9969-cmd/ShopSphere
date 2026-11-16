@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { useToast } from '../../context/ToastContext'
 import { useWishlist } from '../../context/WishlistContext'
-import { EmptyState, PageLoader, PriceTag, SafeImage, StockNote } from '../../components/ui'
+import { EmptyState, PageLoader, PriceTag, SafeImage } from '../../components/ui'
 import { getErrorMessage } from '../../utils/errors'
+import { formatDate } from '../../utils/format'
 
 export default function Wishlist() {
-  const { items, remove } = useWishlist()
-  const { addItem } = useCart()
+  const { items, remove, moveToCart: moveItem } = useWishlist()
+  const { refresh: refreshCart } = useCart()
   const toast = useToast()
   const [busy, setBusy] = useState(null)
 
@@ -17,8 +18,8 @@ export default function Wishlist() {
   const moveToCart = async (product) => {
     setBusy(product.productId)
     try {
-      await addItem(product.productId, 1)
-      await remove(product.productId)
+      await moveItem(product.productId)
+      await refreshCart?.()
       toast.success(`${product.productName} moved to your cart`)
     } catch (err) {
       toast.error(getErrorMessage(err))
@@ -61,7 +62,7 @@ export default function Wishlist() {
         </div>
       ) : (
         <div className="row g-3">
-          {items.map(({ wishlistItemId, product, available }) => (
+          {items.map(({ wishlistItemId, product, available, availability, availabilityLabel, addedAt }) => (
             <div key={wishlistItemId} className="col-sm-6 col-xl-4">
               <article className="ss-product-card">
                 <Link to={`/products/${product.productId}`} className="ss-product-media">
@@ -74,7 +75,12 @@ export default function Wishlist() {
                     {product.productName}
                   </Link>
                   <PriceTag price={product.price} sellingPrice={product.sellingPrice} discountPercent={product.discountPercent} />
-                  {available && <StockNote stock={product.stockQuantity} />}
+                  <div className="d-flex justify-content-between align-items-center small mt-1">
+                    <span className={`ss-pill ${availability === 'IN_STOCK' ? 'ss-pill-success' : availability === 'LOW_STOCK' ? 'ss-pill-warning' : 'ss-pill-muted'}`}>
+                      {availabilityLabel}
+                    </span>
+                    <span className="text-muted">Saved {formatDate(addedAt)}</span>
+                  </div>
                   <div className="d-flex gap-2 mt-2">
                     <button
                       type="button"

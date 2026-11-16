@@ -49,6 +49,9 @@ import com.example.ecommerce.services.PricingPolicy;
 import com.example.ecommerce.services.RazorpayGateway;
 import com.example.ecommerce.services.RefundService;
 import com.example.ecommerce.services.SettingsService;
+import com.example.ecommerce.services.ShippingCalculator;
+import com.example.ecommerce.entites.Shipment;
+import com.example.ecommerce.enums.ShippingStatus;
 import com.razorpay.RazorpayException;
 
 import lombok.RequiredArgsConstructor;
@@ -101,6 +104,7 @@ public class CheckoutServiceImpl implements CheckoutService {
 
         // Re-check every item and take prices from the database, not from the browser.
         BigDecimal subtotal = BigDecimal.ZERO;
+        BigDecimal weight = BigDecimal.ZERO;
         for (CartItem cartItem : cart.getItems()) {
             Product product = cartItem.getProduct();
             if (!ProductServiceImpl.isPubliclyVisible(product) || product.getStockQuantity() < cartItem.getQuantity()) {
@@ -119,6 +123,7 @@ public class CheckoutServiceImpl implements CheckoutService {
             item.setItemStatus(OrderStatus.PENDING_PAYMENT);
             order.addItem(item);
             subtotal = subtotal.add(item.getLineTotal());
+            weight = weight.add(product.getWeightKg().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
         }
 
         BigDecimal discount = BigDecimal.ZERO.setScale(2);
@@ -128,7 +133,19 @@ public class CheckoutServiceImpl implements CheckoutService {
             order.setCouponCode(applied.coupon().getCode());
         }
         BigDecimal afterDiscount = subtotal.subtract(discount);
-        BigDecimal shipping = PricingPolicy.shippingFor(afterDiscount, settings);
+        // Shipping Management: priced from weight, delivery zone and the chosen method.
+        ShippingCalculator.Quote shippingQuote = ShippingCalculator.quote(afterDiscount, weight,
+                ShippingCalculator.zoneFor(order.getCity(), order.getState(), order.getPincode()), request.shipping(),
+                settings, LocalDate.now());
+        BigDecimal shipping = shippingQuote.cost();
+        Shipment shipment = new Shipment();
+        shipment.setShippingCost(shipping);
+        shipment.setShippingMethod(shippingQuote.method());
+        shipment.setDeliveryZone(shippingQuote.zone());
+        shipment.setWeightKg(shippingQuote.weightKg());
+        shipment.setEstimatedDelivery(shippingQuote.estimatedDelivery());
+        shipment.setShippingStatus(ShippingStatus.PENDING);
+        order.attachShipment(shipment);
         order.setSubtotal(subtotal);
         order.setDiscountAmount(discount);
         order.setShippingFee(shipping);
@@ -277,6 +294,7 @@ public class CheckoutServiceImpl implements CheckoutService {
             order.getItems().forEach(i -> i.setItemStatus(OrderStatus.CANCELLED));
             order.setStatus(OrderStatus.CANCELLED);
             order.setStatusNote("An item sold out while you were paying. Your payment is being refunded.");
+            OrderSupport.syncShipment(order);
             refundService.refund(order, order.getTotalAmount(), true);
         }
     }
