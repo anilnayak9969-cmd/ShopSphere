@@ -67,6 +67,11 @@ public class OrderSupport {
 
     /** What the customer actually paid for one line: its total minus its share of the coupon discount. */
     public BigDecimal refundShare(CustomerOrder order, OrderItem item) {
+        if (item.getDiscountShare() != null) {
+            // Coupon Management: the discount was split only among the lines the coupon applied to.
+            return item.getLineTotal().subtract(item.getDiscountShare()).max(BigDecimal.ZERO)
+                    .setScale(2, java.math.RoundingMode.HALF_UP);
+        }
         return PricingPolicy.refundShare(item.getLineTotal(), order.getSubtotal(), order.getDiscountAmount());
     }
 

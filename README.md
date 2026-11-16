@@ -47,6 +47,14 @@ Built against the given `users` table (`user_id`, `first_name`, `last_name`, `em
 3. **Update customer details**: edit name, email, mobile number and account status (email stays unique).
 4. **Deactivate**: a **soft delete** through `active` after a warning. The customer is refused at sign-in, and their profile, addresses and orders are kept. **Activate** restores the account.
 
+### Module 10 — Coupon and Discount Management (assignment module)
+Table `coupons` (`coupon_id`, `code` = coupon_code, `discount_type` PERCENT/FLAT, `discount_value`, `valid_from`, `valid_until` = valid_to, `usage_limit`, `active` = status, `created_at`, `updated_at`, plus `min_order_amount`, `max_discount`, `used_count`, `deleted_at`) with `coupon_products` / `coupon_categories` limits. Guide, screenshots and PDF: [`Docs/CouponManagement`](Docs/CouponManagement/README.md).
+
+1. **Create a coupon**: percentage (1–90%, optional cap) or fixed amount, valid from / expiry, usage limit, and optional limits by order total, products and categories (the discount is worked out only on matching items).
+2. **Coupon dashboard** (**Admin → Coupons**): cards, every coupon with a computed status (Active, Scheduled, Expired, Inactive, Used up, Deleted), filters, search, discount given; create, edit, deactivate, delete.
+3. **Apply at checkout**: **Have a coupon?** in the cart and checkout. The server checks dates, limits, one use per customer, the minimum order and eligible items, and the total updates. Each order line stores its share of the discount for exact refunds.
+4. **Deactivate / delete**: deactivate uses the Boolean status; delete is a soft delete (`deleted_at`) that keeps history and can be restored.
+
 ### Module 9 — Review and Rating Management (assignment module)
 Table `reviews` (`review_id`, `product_id`, `user_id` = customer, `rating` 1–5, `comment` = review text + `title`, `created_at`, `updated_at`, Boolean `status` = approved, plus `moderation_status`, `rejection_reason`, `moderated_at`). Guide, screenshots and PDF: [`Docs/ReviewManagement`](Docs/ReviewManagement/README.md).
 
@@ -243,7 +251,8 @@ Docs/
 ├── CartManagement/                     Cart Management README, submission PDF (+ HTML source) and screenshots
 ├── WishlistManagement/                 Wishlist Management README, submission PDF (+ HTML source) and screenshots
 ├── ShippingManagement/                 Shipping Management README, submission PDF (+ HTML source) and screenshots
-└── ReviewManagement/                   Review and Rating Management README, submission PDF (+ HTML source) and screenshots
+├── ReviewManagement/                   Review and Rating Management README, submission PDF (+ HTML source) and screenshots
+└── CouponManagement/                   Coupon and Discount Management README, submission PDF (+ HTML source) and screenshots
 ```
 
 ---
@@ -258,7 +267,7 @@ In MySQL Workbench open `DataBase/Internship_Ecommerce.sql` and execute it, or r
 ```bash
 mysql -u root -p < DataBase/Internship_Ecommerce.sql
 ```
-This creates `ecommerce_intern`, all 23 tables, the platform settings row and the `WELCOME10` coupon. Then load the catalogue with `mysql -u root -p ecommerce_intern < DataBase/catalog_data.sql`, or just start the backend, which loads the same catalogue itself. It is safe to run more than once. The backend also creates and updates tables automatically, so this step is optional. `DataBase/queries.sql` contains ready-to-run queries for the Category Management module (section 1), the Product Management module (section 7), the Order Management module (section 8), the Customer Management module (section 9), the Payment Management module (section 10), the Cart Management module (section 11), the Wishlist Management module (section 12), the Shipping Management module (section 13), the Review and Rating Management module (section 14) and reports.
+This creates `ecommerce_intern`, all 23 tables, the platform settings row and the `WELCOME10` coupon. Then load the catalogue with `mysql -u root -p ecommerce_intern < DataBase/catalog_data.sql`, or just start the backend, which loads the same catalogue itself. It is safe to run more than once. The backend also creates and updates tables automatically, so this step is optional. `DataBase/queries.sql` contains ready-to-run queries for the Category Management module (section 1), the Product Management module (section 7), the Order Management module (section 8), the Customer Management module (section 9), the Payment Management module (section 10), the Cart Management module (section 11), the Wishlist Management module (section 12), the Shipping Management module (section 13), the Review and Rating Management module (section 14), the Coupon and Discount Management module (section 15) and reports.
 
 ### 2. Backend secrets
 Copy `Backend/ecommerce/src/main/resources/application-secrets.example.properties` to `application-secrets.properties` in the same folder and fill it in. This file is git-ignored.
@@ -368,12 +377,12 @@ All endpoints are prefixed with `/api`. Protected endpoints need the header `Aut
 | Payment Management | `GET /admin/payments?status=&refundedOnly=&method=&search=`, `GET /admin/payments/summary`, `POST /admin/payments/{id}/refund` (`{ amount, reason }`), `GET /admin/refunds`, `GET /admin/payments/{id}/refunds` |
 | Payments & returns | `GET /admin/payments?status=&refundedOnly=`, `GET /admin/returns?status=`, `PATCH /admin/returns/{id}` |
 | Reports, settings, inbox | `GET /admin/reports?days=`, `GET/PUT /admin/settings`, `GET /admin/messages?resolved=`, `PATCH /admin/messages/{id}` |
-| Coupons | `GET/POST /admin/coupons`, `PUT /admin/coupons/{id}`, `PATCH /admin/coupons/{id}/status` |
+| Coupon Management | `GET /admin/coupons?status=ACTIVE\|SCHEDULED\|EXPIRED\|INACTIVE\|USED_UP\|DELETED&search=`, `GET /admin/coupons/summary`, `GET/PUT /admin/coupons/{id}`, `POST /admin/coupons` (`productIds`, `categoryIds` optional), `PATCH /admin/coupons/{id}/status` (activate/deactivate), `DELETE /admin/coupons/{id}` (soft delete), `PATCH /admin/coupons/{id}/restore` |
 | Review moderation | `GET /admin/reviews?status=PENDING\|APPROVED\|REJECTED&rating=&search=`, `GET /admin/reviews/summary`, `PATCH /admin/reviews/{id}/approve`, `PATCH /admin/reviews/{id}/reject` (`{ reason }`), `DELETE /admin/reviews/{id}` |
 
 ---
 
-## Database design (25 tables)
+## Database design (27 tables)
 
 | Table | Purpose / key relationships |
 |-------|------------------------------|
@@ -393,7 +402,8 @@ All endpoints are prefixed with `/api`. Protected endpoints need the header `Aut
 | `refunds` | Refund log: one row per refund transaction (amount, Razorpay or manual, processed/failed, `rfnd_…` id, reason, issued by) |
 | `return_requests` | One per order item: reason, status, refund amount, the seller who decides |
 | `reviews` | Review and Rating Management table. One review per customer per product (`(product_id, user_id)` unique); `rating` 1–5, `title`, `comment`; Boolean `status` (approved), `moderation_status` (PENDING/APPROVED/REJECTED), `rejection_reason`, `moderated_at`. Only approved reviews are shown and counted |
-| `coupons` / `coupon_redemptions` | Discount rules; one redemption per customer, linked to the order |
+| `coupons` / `coupon_redemptions` | Coupon and Discount Management. Percentage or fixed codes with validity dates, usage limit, minimum order, cap, Boolean status (`active`) and soft delete (`deleted_at`); one redemption per customer, linked to the order |
+| `coupon_products` / `coupon_categories` | Optional product and category limits of a coupon (subcategories included); `order_items.discount_share` keeps each line's part of the discount |
 | `order_item_events` | Tracking history: one row per status change, with a plain-words description and time |
 | `notifications` | In-app notifications per user with a link and read flag |
 | `contact_messages` | Contact-form messages for the admin inbox |
@@ -408,7 +418,7 @@ Money uses `DECIMAL(12,2)`. Products and categories are never hard-deleted, so o
 ```bash
 cd Backend/ecommerce && ./mvnw test
 ```
-There are **138 tests**: Review and Rating Management rules (buyers only, 1–5 stars, new and edited reviews wait for approval, approve publishes and recalculates the rating, reject needs a reason, product page shows approved reviews only, customer and admin delete), Shipping Management rules (zone from city, state and PIN, weight steps, free standard delivery and the heavy-parcel charge, express pricing and dates, quotes, shipping with the admin's courier and tracking number, no backward moves, unique tracking numbers, cancelled orders refused, tracking only your own parcels, one history line per parcel step), Wishlist Management rules (add once, on-sale only, 100-item limit, availability states, remove, move to cart in one transaction with the wishlist unchanged on failure), Cart Management rules (stock checks on add and update, stored totals, quantity merge, remove, ownership, Active/Abandoned/Empty, abandonment rate and top products, one reminder per abandoned cart), Payment Management rules (Razorpay method mapping incl. PayPal, masked card/UPI details, every refund logged with its Razorpay refund ID, failed refunds logged but not counted, admin refunds only for cancelled/returned orders and never above what was paid), Customer Management rules (admin-added customers verified and active with a hashed password, duplicate emails refused, contact and status updates, soft-delete deactivation, customer-only access, order history totals), Order Management rules (GST included in the total, dashboard status groups, admin Pending → Shipped jumps with every step recorded, no backward moves, customer cancel until shipping, no admin cancel after shipping), role-based registration (customer, seller, delivery partner and admin access-code rules, vehicle-number formats), Category Management rules (including subcategory cycles), Product Management rules (admin add is approved and live, unapproved stores and duplicate SKUs refused, updates keep approval, inactive categories refused, deactivation is a soft delete), OTP security, Razorpay checkout and webhook signatures, idempotent payment verification, the sold-out refund path, coupon rules (caps, minimum order, expiry, usage limits, one use per customer), verified-purchase reviews, pricing, shipping and commission rules, COD checkout, and item-level order status derivation. The `contextLoads` test needs MySQL running.
+There are **152 tests**: Coupon and Discount Management rules (percentage and fixed coupons, product and category limits including subcategories, all six statuses, dashboard filters and discount given, minimum order on the whole order, discount shared only among eligible lines and used for refunds, deactivate, soft delete and restore), Review and Rating Management rules (buyers only, 1–5 stars, new and edited reviews wait for approval, approve publishes and recalculates the rating, reject needs a reason, product page shows approved reviews only, customer and admin delete), Shipping Management rules (zone from city, state and PIN, weight steps, free standard delivery and the heavy-parcel charge, express pricing and dates, quotes, shipping with the admin's courier and tracking number, no backward moves, unique tracking numbers, cancelled orders refused, tracking only your own parcels, one history line per parcel step), Wishlist Management rules (add once, on-sale only, 100-item limit, availability states, remove, move to cart in one transaction with the wishlist unchanged on failure), Cart Management rules (stock checks on add and update, stored totals, quantity merge, remove, ownership, Active/Abandoned/Empty, abandonment rate and top products, one reminder per abandoned cart), Payment Management rules (Razorpay method mapping incl. PayPal, masked card/UPI details, every refund logged with its Razorpay refund ID, failed refunds logged but not counted, admin refunds only for cancelled/returned orders and never above what was paid), Customer Management rules (admin-added customers verified and active with a hashed password, duplicate emails refused, contact and status updates, soft-delete deactivation, customer-only access, order history totals), Order Management rules (GST included in the total, dashboard status groups, admin Pending → Shipped jumps with every step recorded, no backward moves, customer cancel until shipping, no admin cancel after shipping), role-based registration (customer, seller, delivery partner and admin access-code rules, vehicle-number formats), Category Management rules (including subcategory cycles), Product Management rules (admin add is approved and live, unapproved stores and duplicate SKUs refused, updates keep approval, inactive categories refused, deactivation is a soft delete), OTP security, Razorpay checkout and webhook signatures, idempotent payment verification, the sold-out refund path, coupon rules (caps, minimum order, expiry, usage limits, one use per customer), verified-purchase reviews, pricing, shipping and commission rules, COD checkout, and item-level order status derivation. The `contextLoads` test needs MySQL running.
 
 Frontend: `npm run lint` and `npm run build`.
 

@@ -3,8 +3,18 @@ package com.example.ecommerce.services.impl;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,21 +24,33 @@ import com.example.ecommerce.dtos.common.PageResponse;
 import com.example.ecommerce.dtos.coupon.CouponQuote;
 import com.example.ecommerce.dtos.coupon.CouponRequest;
 import com.example.ecommerce.dtos.coupon.CouponResponse;
+import com.example.ecommerce.entites.Category;
 import com.example.ecommerce.entites.Coupon;
 import com.example.ecommerce.entites.CouponRedemption;
 import com.example.ecommerce.entites.CustomerOrder;
+import com.example.ecommerce.entites.Product;
+import com.example.ecommerce.enums.CouponStatus;
+import com.example.ecommerce.enums.DeliveryZone;
 import com.example.ecommerce.enums.DiscountType;
+import com.example.ecommerce.enums.ShippingMethod;
 import com.example.ecommerce.exception.ApiException;
+import com.example.ecommerce.repositories.CategoryRepository;
 import com.example.ecommerce.repositories.CouponRedemptionRepository;
 import com.example.ecommerce.repositories.CouponRepository;
+import com.example.ecommerce.repositories.ProductRepository;
 import com.example.ecommerce.services.CartService;
 import com.example.ecommerce.services.CouponService;
-import com.example.ecommerce.services.PricingPolicy;
 import com.example.ecommerce.services.SettingsService;
+import com.example.ecommerce.services.ShippingCalculator;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Coupon and Discount Management: percentage or fixed-amount codes with validity dates, a usage limit,
+ * a minimum order total and optional product / category limits; a dashboard of active and expired
+ * coupons; applying a code at checkout; deactivation and soft delete.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -38,14 +60,44 @@ public class CouponServiceImpl implements CouponService {
     private final CouponRedemptionRepository redemptionRepository;
     private final CartService cartService;
     private final SettingsService settingsService;
+    private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
 
     // ----------------------------------------------------------------- admin
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<CouponResponse> list(int page, int size) {
-        return PageResponse.of(couponRepository.findAllByOrderByCreatedAtDesc(
-                PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 50))), CouponResponse::from);
+    public PageResponse<CouponResponse> list(CouponStatus status, String search, int page, int size) {
+        Page<Coupon> coupons = couponRepository.adminSearch(status == null ? "ALL" : status.name(), blankToNull(search),
+                LocalDateTime.now(), PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 50)));
+        Map<Long, BigDecimal> given = new HashMap<>();
+        if (!coupons.isEmpty()) {
+            for (Object[] row : redemptionRepository.discountGiven(coupons.map(Coupon::getCouponId).toList())) {
+                given.put(((Number) row[0]).longValue(), (BigDecimal) row[1]);
+            }
+        }
+        return PageResponse.of(coupons, c -> CouponResponse.from(c, given.getOrDefault(c.getCouponId(), BigDecimal.ZERO)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CouponSummary summary() {
+        LocalDateTime now = LocalDateTime.now();
+        Map<CouponStatus, Long> counts = new EnumMap<>(CouponStatus.class);
+        for (Coupon c : couponRepository.findAll()) {
+            counts.merge(c.statusAt(now), 1L, Long::sum);
+        }
+        Object[] totals = redemptionRepository.totals().get(0);
+        return new CouponSummary(counts.getOrDefault(CouponStatus.ACTIVE, 0L), counts.getOrDefault(CouponStatus.SCHEDULED, 0L),
+                counts.getOrDefault(CouponStatus.EXPIRED, 0L), counts.getOrDefault(CouponStatus.INACTIVE, 0L),
+                counts.getOrDefault(CouponStatus.USED_UP, 0L), counts.getOrDefault(CouponStatus.DELETED, 0L),
+                ((Number) totals[0]).longValue(), ((BigDecimal) totals[1]).setScale(2, RoundingMode.HALF_UP));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CouponResponse get(Long couponId) {
+        return CouponResponse.from(find(couponId));
     }
 
     @Override
@@ -64,9 +116,14 @@ public class CouponServiceImpl implements CouponService {
     @Transactional
     public CouponResponse update(Long couponId, CouponRequest request) {
         Coupon coupon = find(couponId);
+        requireNotDeleted(coupon);
         String code = normalize(request.code());
         if (couponRepository.existsByCodeIgnoreCaseAndCouponIdNot(code, couponId)) {
             throw ApiException.conflict("DUPLICATE_COUPON", "A coupon with code " + code + " already exists.");
+        }
+        if (!code.equals(coupon.getCode()) && coupon.getUsedCount() > 0) {
+            throw ApiException.badRequest("COUPON_IN_USE",
+                    "The code of a coupon that customers have already used cannot be changed. Create a new coupon instead.");
         }
         apply(coupon, request, code);
         return CouponResponse.from(couponRepository.saveAndFlush(coupon));
@@ -76,11 +133,43 @@ public class CouponServiceImpl implements CouponService {
     @Transactional
     public CouponResponse setActive(Long couponId, boolean active) {
         Coupon coupon = find(couponId);
+        requireNotDeleted(coupon);
         coupon.setActive(active);
         return CouponResponse.from(couponRepository.saveAndFlush(coupon));
     }
 
+    @Override
+    @Transactional
+    public CouponResponse delete(Long couponId) {
+        Coupon coupon = find(couponId);
+        if (coupon.getDeletedAt() == null) {
+            coupon.setDeletedAt(LocalDateTime.now());
+            coupon.setActive(false);
+            couponRepository.saveAndFlush(coupon);
+        }
+        return CouponResponse.from(coupon);
+    }
+
+    @Override
+    @Transactional
+    public CouponResponse restore(Long couponId) {
+        Coupon coupon = find(couponId);
+        if (coupon.getDeletedAt() != null) {
+            coupon.setDeletedAt(null);
+            coupon.setActive(false);
+            couponRepository.saveAndFlush(coupon);
+        }
+        return CouponResponse.from(coupon);
+    }
+
     // -------------------------------------------------------------- customer
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.example.ecommerce.dtos.coupon.PublicCouponResponse> publicCoupons() {
+        return couponRepository.currentlyValid(LocalDateTime.now(), PageRequest.of(0, 3)).stream()
+                .map(com.example.ecommerce.dtos.coupon.PublicCouponResponse::from).toList();
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -89,20 +178,21 @@ public class CouponServiceImpl implements CouponService {
         if (cart.items().isEmpty()) {
             throw ApiException.badRequest("CART_EMPTY", "Add items to your cart before applying a coupon.");
         }
-        AppliedCoupon applied = resolve(userId, code, cart.subtotal());
+        AppliedCoupon applied = resolve(userId, code, CouponService.linesOf(cart));
         BigDecimal afterDiscount = cart.subtotal().subtract(applied.discount());
-        BigDecimal shipping = com.example.ecommerce.services.ShippingCalculator.quote(afterDiscount, cart.weightKg(),
-                com.example.ecommerce.enums.DeliveryZone.METRO, com.example.ecommerce.enums.ShippingMethod.STANDARD,
-                settingsService.get(), java.time.LocalDate.now()).cost();
+        BigDecimal shipping = ShippingCalculator.quote(afterDiscount, cart.weightKg(), DeliveryZone.METRO,
+                ShippingMethod.STANDARD, settingsService.get(), java.time.LocalDate.now()).cost();
         return new CouponQuote(applied.coupon().getCode(), applied.coupon().getDescription(), cart.subtotal(),
-                applied.discount(), shipping, afterDiscount.add(shipping));
+                applied.discount(), shipping, afterDiscount.add(shipping), applied.eligibleSubtotal(),
+                CouponResponse.appliesTo(applied.coupon()));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public AppliedCoupon resolve(Long userId, String rawCode, BigDecimal subtotal) {
+    public AppliedCoupon resolve(Long userId, String rawCode, List<CouponLine> lines) {
         String code = normalize(rawCode);
-        Coupon coupon = couponRepository.findByCodeIgnoreCase(code).filter(Coupon::isActive)
+        Coupon coupon = couponRepository.findByCodeIgnoreCase(code)
+                .filter(c -> c.isActive() && c.getDeletedAt() == null)
                 .orElseThrow(() -> ApiException.badRequest("COUPON_INVALID", "“" + code + "” is not a valid coupon code."));
         LocalDateTime now = LocalDateTime.now();
         if (coupon.getValidFrom() != null && now.isBefore(coupon.getValidFrom())) {
@@ -117,13 +207,24 @@ public class CouponServiceImpl implements CouponService {
         if (redemptionRepository.existsByCouponCouponIdAndUserId(coupon.getCouponId(), userId)) {
             throw ApiException.badRequest("COUPON_USED", "You have already used this coupon.");
         }
+        BigDecimal subtotal = lines.stream().map(CouponLine::lineTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
         if (subtotal.compareTo(coupon.getMinOrderAmount()) < 0) {
             throw ApiException.badRequest("COUPON_MIN_ORDER", "Add ₹"
                     + coupon.getMinOrderAmount().subtract(subtotal).setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
                     + " more to use this coupon (minimum order ₹"
                     + coupon.getMinOrderAmount().stripTrailingZeros().toPlainString() + ").");
         }
-        return new AppliedCoupon(coupon, discountFor(coupon, subtotal));
+        if (!coupon.isRestricted()) {
+            return new AppliedCoupon(coupon, discountFor(coupon, subtotal), subtotal, Set.of());
+        }
+        Set<Long> eligible = eligibleProducts(coupon, lines);
+        BigDecimal eligibleSubtotal = lines.stream().filter(l -> l.productId() != null && eligible.contains(l.productId()))
+                .map(CouponLine::lineTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (eligibleSubtotal.signum() == 0) {
+            throw ApiException.badRequest("COUPON_NOT_APPLICABLE", code + " applies only to "
+                    + CouponResponse.appliesTo(coupon) + ". Add an eligible item to use it.");
+        }
+        return new AppliedCoupon(coupon, discountFor(coupon, eligibleSubtotal), eligibleSubtotal, eligible);
     }
 
     @Override
@@ -157,37 +258,84 @@ public class CouponServiceImpl implements CouponService {
 
     // --------------------------------------------------------------- helpers
 
-    /** PERCENT: % of subtotal, capped by maxDiscount. FLAT: fixed rupees. Never more than the subtotal. */
-    static BigDecimal discountFor(Coupon coupon, BigDecimal subtotal) {
+    /** PERCENT: % of the eligible amount, capped by maxDiscount. FLAT: fixed rupees. Never more than the amount. */
+    static BigDecimal discountFor(Coupon coupon, BigDecimal amount) {
         BigDecimal discount;
         if (coupon.getDiscountType() == DiscountType.PERCENT) {
-            discount = subtotal.multiply(coupon.getDiscountValue()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            discount = amount.multiply(coupon.getDiscountValue()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
             if (coupon.getMaxDiscount() != null && discount.compareTo(coupon.getMaxDiscount()) > 0) {
                 discount = coupon.getMaxDiscount();
             }
         } else {
             discount = coupon.getDiscountValue();
         }
-        return discount.min(subtotal).setScale(2, RoundingMode.HALF_UP);
+        return discount.min(amount).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /** Products in the lines that the coupon covers: listed directly, or in a listed category or one of its subcategories. */
+    private Set<Long> eligibleProducts(Coupon coupon, List<CouponLine> lines) {
+        Set<Long> productIds = coupon.getProducts().stream().map(Product::getProductId).collect(Collectors.toSet());
+        Set<Integer> categoryIds = coupon.getCategories().stream().map(Category::getCategoryId).collect(Collectors.toSet());
+        Set<Long> inCart = lines.stream().map(CouponLine::productId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<Long> eligible = new HashSet<>();
+        for (Product p : productRepository.findAllById(inCart)) {
+            if (productIds.contains(p.getProductId()) || inCategories(p.getCategory(), categoryIds)) {
+                eligible.add(p.getProductId());
+            }
+        }
+        return eligible;
+    }
+
+    private static boolean inCategories(Category category, Set<Integer> categoryIds) {
+        for (int depth = 0; category != null && depth < 10; depth++, category = category.getParent()) {
+            if (categoryIds.contains(category.getCategoryId())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void apply(Coupon coupon, CouponRequest r, String code) {
         if (r.discountType() == DiscountType.PERCENT && r.discountValue().compareTo(BigDecimal.valueOf(90)) > 0) {
             throw ApiException.badRequest("INVALID_DISCOUNT", "A percentage discount cannot exceed 90%.");
         }
+        BigDecimal minOrder = r.minOrderAmount() == null ? BigDecimal.ZERO : r.minOrderAmount();
+        if (r.discountType() == DiscountType.FLAT && minOrder.signum() > 0 && r.discountValue().compareTo(minOrder) > 0) {
+            throw ApiException.badRequest("INVALID_DISCOUNT", "A fixed discount cannot be larger than the minimum order.");
+        }
         if (r.validFrom() != null && r.validUntil() != null && !r.validUntil().isAfter(r.validFrom())) {
             throw ApiException.badRequest("INVALID_DATES", "The end date must be after the start date.");
         }
+        Set<Long> productIds = r.productIds() == null ? Set.of() : new LinkedHashSet<>(r.productIds());
+        List<Product> products = productIds.isEmpty() ? List.of() : productRepository.findAllById(productIds);
+        if (products.size() != productIds.size()) {
+            throw ApiException.badRequest("INVALID_PRODUCTS", "One or more of the chosen products no longer exist.");
+        }
+        Set<Integer> categoryIds = r.categoryIds() == null ? Set.of() : new LinkedHashSet<>(r.categoryIds());
+        List<Category> categories = categoryIds.isEmpty() ? List.of() : categoryRepository.findAllById(categoryIds);
+        if (categories.size() != categoryIds.size()) {
+            throw ApiException.badRequest("INVALID_CATEGORIES", "One or more of the chosen categories no longer exist.");
+        }
         coupon.setCode(code);
-        coupon.setDescription(r.description() == null || r.description().isBlank() ? null : r.description().trim());
+        coupon.setDescription(blankToNull(r.description()));
         coupon.setDiscountType(r.discountType());
         coupon.setDiscountValue(r.discountValue());
-        coupon.setMinOrderAmount(r.minOrderAmount() == null ? BigDecimal.ZERO : r.minOrderAmount());
+        coupon.setMinOrderAmount(minOrder);
         coupon.setMaxDiscount(r.discountType() == DiscountType.PERCENT ? r.maxDiscount() : null);
         coupon.setValidFrom(r.validFrom());
         coupon.setValidUntil(r.validUntil());
         coupon.setUsageLimit(r.usageLimit());
         coupon.setActive(r.isActive());
+        coupon.getProducts().clear();
+        coupon.getProducts().addAll(products);
+        coupon.getCategories().clear();
+        coupon.getCategories().addAll(categories);
+    }
+
+    private static void requireNotDeleted(Coupon coupon) {
+        if (coupon.getDeletedAt() != null) {
+            throw ApiException.badRequest("COUPON_DELETED", "Coupon " + coupon.getCode() + " was deleted. Restore it first.");
+        }
     }
 
     private Coupon find(Long couponId) {
@@ -196,6 +344,10 @@ public class CouponServiceImpl implements CouponService {
     }
 
     private static String normalize(String code) {
-        return code.trim().toUpperCase(Locale.ROOT);
+        return code == null ? "" : code.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

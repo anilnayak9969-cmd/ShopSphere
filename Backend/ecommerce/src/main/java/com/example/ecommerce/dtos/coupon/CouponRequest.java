@@ -2,6 +2,7 @@ package com.example.ecommerce.dtos.coupon;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.example.ecommerce.enums.DiscountType;
 
@@ -14,6 +15,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Create / edit a coupon. productIds and categoryIds are optional limits: when either is given, the
+ * discount applies only to matching items; minOrderAmount limits it by order total.
+ */
 public record CouponRequest(
         @NotBlank(message = "Code is required")
         @Pattern(regexp = "^[A-Za-z0-9]{4,30}$", message = "Code must be 4-30 letters or numbers") String code,
@@ -31,7 +36,9 @@ public record CouponRequest(
         LocalDateTime validUntil,
         @Min(value = 1, message = "Usage limit must be at least 1") Integer usageLimit,
         /* Boxed so it can be omitted; a new coupon is active unless explicitly false. */
-        Boolean active) {
+        Boolean active,
+        @Size(max = 50, message = "A coupon can be limited to at most 50 products") List<Long> productIds,
+        @Size(max = 20, message = "A coupon can be limited to at most 20 categories") List<Integer> categoryIds) {
 
     public boolean isActive() {
         return !Boolean.FALSE.equals(active);

@@ -2,8 +2,15 @@ package com.example.ecommerce.entites;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
+import com.example.ecommerce.enums.CouponStatus;
 import com.example.ecommerce.enums.DiscountType;
+
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -66,6 +73,47 @@ public class Coupon extends AuditableEntity {
     @Column(name = "used_count", nullable = false)
     private int usedCount;
 
+    /** Assignment column "status": true = active, false = inactive. */
     @Column(nullable = false)
     private boolean active = true;
+
+    /** Soft delete: the row (and its redemption history) is kept, hidden from the dashboard and unusable. */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    /** Optional: the discount applies only to these products. Empty = no product restriction. */
+    @ManyToMany
+    @JoinTable(name = "coupon_products", joinColumns = @JoinColumn(name = "coupon_id"),
+            inverseJoinColumns = @JoinColumn(name = "product_id"))
+    private Set<Product> products = new LinkedHashSet<>();
+
+    /** Optional: the discount applies only to products in these categories (and their subcategories). */
+    @ManyToMany
+    @JoinTable(name = "coupon_categories", joinColumns = @JoinColumn(name = "coupon_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id"))
+    private Set<Category> categories = new LinkedHashSet<>();
+
+    public boolean isRestricted() {
+        return !products.isEmpty() || !categories.isEmpty();
+    }
+
+    /** The dashboard status at a moment in time. */
+    public CouponStatus statusAt(LocalDateTime now) {
+        if (deletedAt != null) {
+            return CouponStatus.DELETED;
+        }
+        if (validUntil != null && now.isAfter(validUntil)) {
+            return CouponStatus.EXPIRED;
+        }
+        if (!active) {
+            return CouponStatus.INACTIVE;
+        }
+        if (validFrom != null && now.isBefore(validFrom)) {
+            return CouponStatus.SCHEDULED;
+        }
+        if (usageLimit != null && usedCount >= usageLimit) {
+            return CouponStatus.USED_UP;
+        }
+        return CouponStatus.ACTIVE;
+    }
 }

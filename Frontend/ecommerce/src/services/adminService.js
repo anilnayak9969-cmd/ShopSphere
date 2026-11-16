@@ -81,6 +81,9 @@ const adminService = {
   createCoupon: (payload) => api.post('/admin/coupons', payload).then((r) => r.data),
   updateCoupon: (id, payload) => api.put(`/admin/coupons/${id}`, payload).then((r) => r.data),
   setCouponActive: (id, active) => api.patch(`/admin/coupons/${id}/status`, { active }).then((r) => r.data),
+  getCouponSummary: () => api.get('/admin/coupons/summary').then((r) => r.data),
+  deleteCoupon: (id) => api.delete(`/admin/coupons/${id}`).then((r) => r.data),
+  restoreCoupon: (id) => api.patch(`/admin/coupons/${id}/restore`).then((r) => r.data),
 
   // Reviews
   getReviews: (params) => api.get('/admin/reviews', { params: cleanParams(params) }).then((r) => r.data),

@@ -68,6 +68,13 @@ public class OrderItem {
     private BigDecimal lineTotal;
 
     /**
+     * This line's part of the order's coupon discount. A coupon limited to some products or categories is
+     * shared only among those lines; null on orders placed before this column existed (shared pro rata).
+     */
+    @Column(name = "discount_share", precision = 12, scale = 2)
+    private BigDecimal discountShare;
+
+    /**
      * Fulfilment status of this line. Each seller moves only their own lines
      * (CONFIRMED -> PACKED -> SHIPPED -> DELIVERED); the order status is derived from all lines.
      */

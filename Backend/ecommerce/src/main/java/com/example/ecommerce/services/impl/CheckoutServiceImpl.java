@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -128,9 +129,11 @@ public class CheckoutServiceImpl implements CheckoutService {
 
         BigDecimal discount = BigDecimal.ZERO.setScale(2);
         if (request.couponCode() != null && !request.couponCode().isBlank()) {
-            AppliedCoupon applied = couponService.resolve(userId, request.couponCode(), subtotal);
+            AppliedCoupon applied = couponService.resolve(userId, request.couponCode(), order.getItems().stream()
+                    .map(i -> new CouponService.CouponLine(i.getProduct().getProductId(), i.getLineTotal())).toList());
             discount = applied.discount();
             order.setCouponCode(applied.coupon().getCode());
+            shareDiscount(order, applied);
         }
         BigDecimal afterDiscount = subtotal.subtract(discount);
         // Shipping Management: priced from weight, delivery zone and the chosen method.
@@ -332,6 +335,30 @@ public class CheckoutServiceImpl implements CheckoutService {
                 "/seller/orders"));
         emailService.sendOrderConfirmation(order);
         return true;
+    }
+
+    /**
+     * Coupon Management: splits the discount among the lines it applied to (all lines, or only the products
+     * and categories the coupon is limited to), in proportion to their totals; the last line takes the
+     * rounding remainder. Refunds of a line then give back exactly what was paid for it.
+     */
+    static void shareDiscount(CustomerOrder order, AppliedCoupon applied) {
+        List<OrderItem> lines = order.getItems().stream()
+                .filter(i -> !applied.restricted() || applied.eligibleProductIds().contains(i.getProduct().getProductId()))
+                .toList();
+        BigDecimal base = lines.stream().map(OrderItem::getLineTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal left = applied.discount();
+        for (OrderItem item : order.getItems()) {
+            item.setDiscountShare(BigDecimal.ZERO.setScale(2));
+        }
+        for (int i = 0; i < lines.size(); i++) {
+            OrderItem item = lines.get(i);
+            BigDecimal share = i == lines.size() - 1 ? left
+                    : applied.discount().multiply(item.getLineTotal()).divide(base, 2, java.math.RoundingMode.HALF_UP);
+            share = share.min(item.getLineTotal()).min(left);
+            item.setDiscountShare(share);
+            left = left.subtract(share);
+        }
     }
 
     private static Payment newPayment(CustomerOrder order, PaymentMethod method, PaymentStatus status) {

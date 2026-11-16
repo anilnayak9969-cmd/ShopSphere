@@ -1,10 +1,8 @@
 package com.example.ecommerce.controller;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -21,7 +19,7 @@ import com.example.ecommerce.dtos.admin.PlatformSettingsDto;
 import com.example.ecommerce.dtos.common.ContactRequest;
 import com.example.ecommerce.dtos.common.MessageResponse;
 import com.example.ecommerce.dtos.coupon.PublicCouponResponse;
-import com.example.ecommerce.repositories.CouponRepository;
+import com.example.ecommerce.services.CouponService;
 import com.example.ecommerce.services.ContactService;
 import com.example.ecommerce.services.FileStorageService;
 import com.example.ecommerce.services.SettingsService;
@@ -36,7 +34,7 @@ import lombok.RequiredArgsConstructor;
 public class PublicController {
 
     private final SettingsService settingsService;
-    private final CouponRepository couponRepository;
+    private final CouponService couponService;
     private final ContactService contactService;
     private final FileStorageService fileStorageService;
 
@@ -49,8 +47,7 @@ public class PublicController {
     /** Coupons that are active right now — the home page's promotional banner uses these. */
     @GetMapping("/public/coupons")
     public List<PublicCouponResponse> coupons() {
-        return couponRepository.currentlyValid(LocalDateTime.now(), PageRequest.of(0, 3)).stream()
-                .map(PublicCouponResponse::from).toList();
+        return couponService.publicCoupons();
     }
 
     @PostMapping("/contact")

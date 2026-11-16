@@ -34,6 +34,11 @@ export default function CouponBox({ quote, onApplied, onRemoved, disabled = fals
         <div className="flex-grow-1 min-w-0">
           <strong>{quote.code}</strong> applied — you save {formatPrice(quote.discount)}
           {quote.description && <div className="small text-muted">{quote.description}</div>}
+          {quote.appliesTo && quote.appliesTo !== 'All products' && (
+            <div className="small text-muted">
+              Applies to {quote.appliesTo} ({formatPrice(quote.eligibleSubtotal)} of your cart)
+            </div>
+          )}
         </div>
         <button type="button" className="btn-link-ink small" onClick={onRemoved} disabled={disabled}>
           Remove

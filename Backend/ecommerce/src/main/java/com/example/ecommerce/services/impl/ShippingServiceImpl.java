@@ -85,7 +85,7 @@ public class ShippingServiceImpl implements ShippingService {
         BigDecimal discount = BigDecimal.ZERO.setScale(2);
         String code = null;
         if (request.couponCode() != null && !request.couponCode().isBlank()) {
-            var applied = couponService.resolve(customerId, request.couponCode(), cart.subtotal());
+            var applied = couponService.resolve(customerId, request.couponCode(), CouponService.linesOf(cart));
             discount = applied.discount();
             code = applied.coupon().getCode();
         }

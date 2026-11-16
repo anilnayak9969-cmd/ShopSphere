@@ -1026,3 +1026,112 @@ ROLLBACK;  -- demo only: use COMMIT to keep the changes
 SELECT p.product_name, p.rating_average, p.rating_count
 FROM products p WHERE p.rating_count > 0
 ORDER BY p.rating_average DESC, p.rating_count DESC LIMIT 5;
+
+-- =====================================================================
+-- 15. COUPON AND DISCOUNT MANAGEMENT MODULE (assignment)
+--    Assignment "coupons" -> ShopSphere coupons (same table name):
+--    coupon_id, coupon_code -> code (unique), discount_type (PERCENT / FLAT), discount_value,
+--    valid_from, valid_to -> valid_until, usage_limit, status -> active (BIT), created_at, updated_at
+--    + description, min_order_amount (order-total limit), max_discount (cap for %), used_count,
+--      deleted_at (soft delete); coupon_products / coupon_categories (optional product/category limits);
+--      coupon_redemptions (one use per customer); order_items.discount_share (each line's part of the discount).
+-- =====================================================================
+
+-- 15.1 Tables (created by Hibernate; shown here for reference)
+-- CREATE TABLE coupons (
+--   coupon_id        BIGINT AUTO_INCREMENT PRIMARY KEY,
+--   code             VARCHAR(30) NOT NULL UNIQUE,     -- coupon_code
+--   description      VARCHAR(200),
+--   discount_type    ENUM('PERCENT','FLAT') NOT NULL,
+--   discount_value   DECIMAL(12,2) NOT NULL,          -- percent (1-90) or rupees
+--   min_order_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+--   max_discount     DECIMAL(12,2),                   -- cap for percentage coupons
+--   valid_from       DATETIME(6),
+--   valid_until      DATETIME(6),                     -- valid_to
+--   usage_limit      INT,                             -- null = unlimited
+--   used_count       INT NOT NULL DEFAULT 0,
+--   active           BIT(1) NOT NULL,                 -- status: 1 active, 0 inactive
+--   deleted_at       DATETIME(6),                     -- soft delete
+--   created_at       DATETIME(6) NOT NULL,
+--   updated_at       DATETIME(6) NOT NULL
+-- );
+-- CREATE TABLE coupon_products   (coupon_id BIGINT NOT NULL, product_id  BIGINT NOT NULL, PRIMARY KEY (coupon_id, product_id));
+-- CREATE TABLE coupon_categories (coupon_id BIGINT NOT NULL, category_id INT    NOT NULL, PRIMARY KEY (coupon_id, category_id));
+
+-- 15.2 Coupon dashboard: every coupon with its status (deleted, expired, inactive, scheduled, used up, active)
+SELECT c.code, c.discount_type, c.discount_value, c.max_discount, c.min_order_amount,
+       c.valid_from, c.valid_until, c.used_count, c.usage_limit,
+       CASE WHEN c.deleted_at IS NOT NULL THEN 'DELETED'
+            WHEN c.valid_until < NOW() THEN 'EXPIRED'
+            WHEN c.active = b'0' THEN 'INACTIVE'
+            WHEN c.valid_from > NOW() THEN 'SCHEDULED'
+            WHEN c.usage_limit IS NOT NULL AND c.used_count >= c.usage_limit THEN 'USED_UP'
+            ELSE 'ACTIVE' END AS status,
+       COALESCE(NULLIF(CONCAT_WS(' · ',
+           (SELECT GROUP_CONCAT(cat.category_name ORDER BY cat.category_name SEPARATOR ', ')
+              FROM coupon_categories cc JOIN categories cat ON cat.category_id = cc.category_id WHERE cc.coupon_id = c.coupon_id),
+           (SELECT GROUP_CONCAT(p.product_name ORDER BY p.product_name SEPARATOR ', ')
+              FROM coupon_products cp JOIN products p ON p.product_id = cp.product_id WHERE cp.coupon_id = c.coupon_id)), ''),
+           'All products') AS applies_to
+FROM coupons c
+ORDER BY c.created_at DESC;
+
+-- 15.3 Active and expired coupons only (the assignment's dashboard view)
+SELECT code, valid_until, IF(valid_until < NOW(), 'EXPIRED', 'ACTIVE') AS state
+FROM coupons
+WHERE deleted_at IS NULL AND active = b'1'
+  AND (valid_from IS NULL OR valid_from <= NOW())
+ORDER BY state, code;
+
+-- 15.4 Discount given per coupon (cancelled orders excluded)
+SELECT c.code, COUNT(r.redemption_id) AS orders, COALESCE(SUM(r.discount_amount), 0) AS discount_given
+FROM coupons c
+LEFT JOIN (coupon_redemptions r JOIN orders o ON o.order_id = r.order_id AND o.status <> 'CANCELLED')
+       ON r.coupon_id = c.coupon_id
+GROUP BY c.coupon_id ORDER BY discount_given DESC;
+
+-- 15.5 Apply a coupon at checkout: BOOKS20 on the demo customer's cart.
+--      Only lines in the coupon's categories (or their subcategories) / products count; 20% of them, capped.
+SELECT c.code, cart.subtotal, cart.eligible_subtotal,
+       LEAST(ROUND(cart.eligible_subtotal * c.discount_value / 100, 2), COALESCE(c.max_discount, 1e12)) AS discount,
+       cart.subtotal - LEAST(ROUND(cart.eligible_subtotal * c.discount_value / 100, 2), COALESCE(c.max_discount, 1e12)) AS total_before_shipping
+FROM coupons c
+CROSS JOIN (
+    SELECT SUM(ci.line_total) AS subtotal,
+           SUM(CASE WHEN EXISTS (SELECT 1 FROM coupon_categories cc JOIN coupons k ON k.coupon_id = cc.coupon_id
+                                 WHERE k.code = 'BOOKS20' AND cc.category_id IN (cat.category_id, cat.parent_category_id))
+                      OR EXISTS (SELECT 1 FROM coupon_products cp JOIN coupons k ON k.coupon_id = cp.coupon_id
+                                 WHERE k.code = 'BOOKS20' AND cp.product_id = p.product_id)
+                    THEN ci.line_total ELSE 0 END) AS eligible_subtotal
+    FROM cart_items ci
+    JOIN carts ca     ON ca.cart_id = ci.cart_id
+    JOIN users u      ON u.user_id = ca.user_id
+    JOIN products p   ON p.product_id = ci.product_id
+    JOIN categories cat ON cat.category_id = p.category_id
+    WHERE u.email = 'demo.customer@shopsphere.local') cart
+WHERE c.code = 'BOOKS20' AND c.active = b'1' AND c.deleted_at IS NULL
+  AND (c.valid_from IS NULL OR c.valid_from <= NOW()) AND (c.valid_until IS NULL OR c.valid_until >= NOW())
+  AND (c.usage_limit IS NULL OR c.used_count < c.usage_limit)
+  AND cart.subtotal >= c.min_order_amount;
+
+-- 15.6 Create, edit, deactivate, soft delete and restore — in one transaction, rolled back (demo only)
+START TRANSACTION;
+INSERT INTO coupons (code, description, discount_type, discount_value, min_order_amount, max_discount,
+                     valid_from, valid_until, usage_limit, used_count, active, created_at, updated_at)
+VALUES ('SPORTS10', '10% off sports & fitness', 'PERCENT', 10, 0, 500, NOW(6), NOW(6) + INTERVAL 30 DAY, 100, 0, b'1', NOW(6), NOW(6));
+INSERT INTO coupon_categories (coupon_id, category_id)
+SELECT coupon_id, (SELECT category_id FROM categories WHERE category_name = 'Sports & Fitness') FROM coupons WHERE code = 'SPORTS10';
+UPDATE coupons SET discount_value = 12, updated_at = NOW(6) WHERE code = 'SPORTS10';                 -- edit
+UPDATE coupons SET active = b'0', updated_at = NOW(6) WHERE code = 'SPORTS10';                      -- deactivate
+UPDATE coupons SET deleted_at = NOW(6), active = b'0', updated_at = NOW(6) WHERE code = 'SPORTS10';  -- soft delete
+SELECT code, active + 0 AS status, deleted_at IS NOT NULL AS deleted FROM coupons WHERE code = 'SPORTS10';
+UPDATE coupons SET deleted_at = NULL, updated_at = NOW(6) WHERE code = 'SPORTS10';                  -- restore (inactive)
+ROLLBACK;  -- demo only: use COMMIT to keep the changes
+
+-- 15.7 How a coupon order's discount was shared among its lines (used for refunds)
+SELECT o.order_number, o.coupon_code, oi.product_name, oi.line_total, oi.discount_share,
+       oi.line_total - COALESCE(oi.discount_share, 0) AS paid_for_line
+FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+WHERE o.coupon_code IS NOT NULL
+ORDER BY o.created_at DESC, oi.order_item_id
+LIMIT 10;
