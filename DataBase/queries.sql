@@ -725,3 +725,69 @@ SET refunded_amount = refunded_amount - @refund_amount,
 WHERE payment_id = @payment
   AND EXISTS (SELECT 1 FROM refunds WHERE payment_id = @payment AND reason = 'SQL example refund');
 DELETE FROM refunds WHERE payment_id = @payment AND reason = 'SQL example refund';
+-- =====================================================================
+-- 11. CART MANAGEMENT MODULE (assignment)
+--    The assignment's single "carts" row (cart_id, customer_id, product_id, quantity, total_price)
+--    is split into two tables so a customer has ONE cart holding MANY products:
+--      carts      (cart_id, user_id = customer_id, total_price, total_quantity, created_at, updated_at)
+--      cart_items (cart_item_id, cart_id, product_id, quantity, line_total, added_at, updated_at)
+-- =====================================================================
+
+-- 11.1 A customer's cart: product name, price, quantity and line total
+SELECT p.product_name, p.selling_price AS price, ci.quantity, ci.line_total, p.stock_quantity
+FROM carts c
+JOIN cart_items ci ON ci.cart_id = c.cart_id
+JOIN products p    ON p.product_id = ci.product_id
+WHERE c.user_id = (SELECT user_id FROM users WHERE email = 'demo.customer@shopsphere.local');
+
+-- 11.2 Add to cart only if enough stock (the app also caps a product at 10 units per order)
+SET @cart := (SELECT cart_id FROM carts WHERE user_id = (SELECT user_id FROM users WHERE email = 'demo.customer@shopsphere.local'));
+INSERT INTO cart_items (cart_id, product_id, quantity, price_at_add, line_total, added_at, updated_at)
+SELECT @cart, product_id, 1, selling_price, selling_price, NOW(6), NOW(6)
+FROM products WHERE product_id = 62 AND stock_quantity >= 1 AND active = b'1'
+ON DUPLICATE KEY UPDATE quantity = quantity + 1;
+
+-- 11.3 Update quantity (checked against stock) and recalculate the totals
+UPDATE cart_items ci JOIN products p ON p.product_id = ci.product_id
+SET ci.quantity = 2, ci.line_total = p.selling_price * 2, ci.updated_at = NOW(6)
+WHERE ci.cart_id = @cart AND ci.product_id = 62 AND p.stock_quantity >= 2;
+UPDATE carts c
+SET c.total_price    = (SELECT COALESCE(SUM(line_total), 0) FROM cart_items WHERE cart_id = c.cart_id),
+    c.total_quantity = (SELECT COALESCE(SUM(quantity), 0)   FROM cart_items WHERE cart_id = c.cart_id),
+    c.updated_at     = NOW(6)
+WHERE c.cart_id = @cart;
+
+-- 11.4 Remove from cart and recalculate
+DELETE FROM cart_items WHERE cart_id = @cart AND product_id = 62;
+UPDATE carts c
+SET c.total_price    = (SELECT COALESCE(SUM(line_total), 0) FROM cart_items WHERE cart_id = c.cart_id),
+    c.total_quantity = (SELECT COALESCE(SUM(quantity), 0)   FROM cart_items WHERE cart_id = c.cart_id),
+    c.updated_at     = NOW(6)
+WHERE c.cart_id = @cart;
+
+-- 11.5 Admin: all customer carts with their state (abandoned = items, no activity for 24 hours)
+SELECT c.cart_id, u.full_name, u.email, c.total_quantity, c.total_price, c.updated_at AS last_activity,
+       CASE WHEN c.total_quantity = 0 THEN 'EMPTY'
+            WHEN c.updated_at < NOW() - INTERVAL 24 HOUR THEN 'ABANDONED'
+            ELSE 'ACTIVE' END AS state
+FROM carts c JOIN users u ON u.user_id = c.user_id
+WHERE u.role = 'CUSTOMER'
+ORDER BY c.updated_at DESC;
+
+-- 11.6 Cart abandonment: abandoned carts, value left behind, and rate vs orders in the last 30 days
+SELECT ab.abandoned_carts, ab.value_left_behind, o.orders_30_days,
+       ROUND(ab.abandoned_carts * 100 / NULLIF(ab.abandoned_carts + o.orders_30_days, 0), 1) AS abandonment_rate_pct
+FROM (SELECT COUNT(*) AS abandoned_carts, COALESCE(SUM(total_price), 0) AS value_left_behind
+      FROM carts WHERE total_quantity > 0 AND updated_at < NOW() - INTERVAL 24 HOUR) ab,
+     (SELECT COUNT(*) AS orders_30_days FROM orders
+      WHERE status <> 'PENDING_PAYMENT' AND created_at >= NOW() - INTERVAL 30 DAY) o;
+
+-- 11.7 Most abandoned products
+SELECT p.product_name, COUNT(*) AS carts, SUM(ci.quantity) AS units, SUM(ci.line_total) AS value
+FROM cart_items ci
+JOIN carts c    ON c.cart_id = ci.cart_id
+JOIN products p ON p.product_id = ci.product_id
+WHERE c.updated_at < NOW() - INTERVAL 24 HOUR
+GROUP BY p.product_id
+ORDER BY carts DESC, value DESC
+LIMIT 5;

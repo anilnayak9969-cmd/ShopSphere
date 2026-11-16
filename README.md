@@ -47,6 +47,14 @@ Built against the given `users` table (`user_id`, `first_name`, `last_name`, `em
 3. **Update customer details**: edit name, email, mobile number and account status (email stays unique).
 4. **Deactivate**: a **soft delete** through `active` after a warning. The customer is refused at sign-in, and their profile, addresses and orders are kept. **Activate** restores the account.
 
+### Module 6 — Cart Management (assignment module)
+Cart stored as `carts` (one per customer, with `total_price`, `total_quantity`, `updated_at` = last activity) + `cart_items` (product, quantity, `line_total`). Full guide, screenshots and the submission PDF: [`Docs/CartManagement`](Docs/CartManagement/README.md).
+
+1. **Add to cart** from the product page; the server checks availability, stock and the 10-unit limit.
+2. **Update cart**: − / + recalculates line totals and the order total from current prices; quantities never exceed stock.
+3. **Remove from cart** (or save for later); totals recalculated.
+4. **Cart dashboard**: customers see product, price, quantity and totals; admins get **Admin → Carts** with every customer cart (Active / Abandoned / Empty), abandonment rate, value left behind, most abandoned products, and a **Remind** button for abandoned carts.
+
 ### Module 5 — Payment Management (assignment module)
 Built against the given `payments` table (`payment_id`, `order_id`, `amount`, `payment_method` → `method` + `instrument`, `payment_status` → `status`, `created_at`, `updated_at`), plus a new `refunds` log table. Full guide, screenshots and the submission PDF: [`Docs/PaymentManagement`](Docs/PaymentManagement/README.md).
 
@@ -207,7 +215,8 @@ Docs/
 ├── ProductManagement/                  Product Management README, submission PDF (+ HTML source) and screenshots
 ├── OrderManagement/                    Order Management README, submission PDF (+ HTML source) and screenshots
 ├── CustomerManagement/                 Customer Management README, submission PDF (+ HTML source) and screenshots
-└── PaymentManagement/                  Payment Management README, submission PDF (+ HTML source) and screenshots
+├── PaymentManagement/                  Payment Management README, submission PDF (+ HTML source) and screenshots
+└── CartManagement/                     Cart Management README, submission PDF (+ HTML source) and screenshots
 ```
 
 ---
@@ -222,7 +231,7 @@ In MySQL Workbench open `DataBase/Internship_Ecommerce.sql` and execute it, or r
 ```bash
 mysql -u root -p < DataBase/Internship_Ecommerce.sql
 ```
-This creates `ecommerce_intern`, all 23 tables, the platform settings row and the `WELCOME10` coupon. Then load the catalogue with `mysql -u root -p ecommerce_intern < DataBase/catalog_data.sql`, or just start the backend, which loads the same catalogue itself. It is safe to run more than once. The backend also creates and updates tables automatically, so this step is optional. `DataBase/queries.sql` contains ready-to-run queries for the Category Management module (section 1), the Product Management module (section 7), the Order Management module (section 8), the Customer Management module (section 9), the Payment Management module (section 10) and reports.
+This creates `ecommerce_intern`, all 23 tables, the platform settings row and the `WELCOME10` coupon. Then load the catalogue with `mysql -u root -p ecommerce_intern < DataBase/catalog_data.sql`, or just start the backend, which loads the same catalogue itself. It is safe to run more than once. The backend also creates and updates tables automatically, so this step is optional. `DataBase/queries.sql` contains ready-to-run queries for the Category Management module (section 1), the Product Management module (section 7), the Order Management module (section 8), the Customer Management module (section 9), the Payment Management module (section 10), the Cart Management module (section 11) and reports.
 
 ### 2. Backend secrets
 Copy `Backend/ecommerce/src/main/resources/application-secrets.example.properties` to `application-secrets.properties` in the same folder and fill it in. This file is git-ignored.
@@ -326,6 +335,7 @@ All endpoints are prefixed with `/api`. Protected endpoints need the header `Aut
 | Dashboard & people | `GET /admin/dashboard`, `GET /admin/users?role=`, `POST /admin/admins` (create an admin), `PATCH /admin/sellers/{id}/status`, `PATCH /admin/users/{id}/status`, `GET /admin/delivery-partners?status=&search=`, `PATCH /admin/delivery-partners/{id}/status` |
 | Product Management | `GET /admin/products?search=&categoryId=&approval=&active=`, `GET /admin/products/summary`, `GET /admin/products/{id}`, `POST /admin/products` (`{ sellerId, product }`), `PUT /admin/products/{id}`, `PATCH /admin/products/{id}/status` (deactivate/activate), `PATCH /admin/products/{id}/approve`, `PATCH /admin/products/{id}/reject`, `PATCH /admin/products/{id}/category` |
 | Order Management | `GET /admin/orders?group=PENDING\|SHIPPED\|DELIVERED\|CANCELLED\|RETURNS\|UNPAID&status=&search=`, `GET /admin/orders/summary`, `GET /admin/orders/{id}`, `PATCH /admin/orders/{id}/status` (`{ status, note }`; forward jumps allowed; `CANCELLED` cancels unshipped items) |
+| Cart Management | `GET /admin/carts?state=&search=&abandonedAfterHours=`, `GET /admin/carts/summary`, `GET /admin/carts/{id}`, `POST /admin/carts/{id}/remind` |
 | Payment Management | `GET /admin/payments?status=&refundedOnly=&method=&search=`, `GET /admin/payments/summary`, `POST /admin/payments/{id}/refund` (`{ amount, reason }`), `GET /admin/refunds`, `GET /admin/payments/{id}/refunds` |
 | Payments & returns | `GET /admin/payments?status=&refundedOnly=`, `GET /admin/returns?status=`, `PATCH /admin/returns/{id}` |
 | Reports, settings, inbox | `GET /admin/reports?days=`, `GET/PUT /admin/settings`, `GET /admin/messages?resolved=`, `PATCH /admin/messages/{id}` |

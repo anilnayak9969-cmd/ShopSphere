@@ -24,6 +24,12 @@ const adminService = {
   updateCustomer: (id, payload) => api.put(`/admin/customers/${id}`, payload).then((r) => r.data),
   setCustomerActive: (id, active) => api.patch(`/admin/customers/${id}/status`, { active }).then((r) => r.data),
 
+  // Cart Management (customer carts and abandonment)
+  getCarts: (params) => api.get('/admin/carts', { params: cleanParams(params) }).then((r) => r.data),
+  getCartSummary: (abandonedAfterHours) => api.get('/admin/carts/summary', { params: { abandonedAfterHours } }).then((r) => r.data),
+  getCart: (id, abandonedAfterHours) => api.get(`/admin/carts/${id}`, { params: { abandonedAfterHours } }).then((r) => r.data),
+  remindCart: (id, abandonedAfterHours) => api.post(`/admin/carts/${id}/remind`, null, { params: { abandonedAfterHours } }).then((r) => r.data),
+
   // Users & sellers
   getUsers: (params) => api.get('/admin/users', { params: cleanParams(params) }).then((r) => r.data),
   setSellerStatus: (id, status) => api.patch(`/admin/sellers/${id}/status`, { status }).then((r) => r.data),

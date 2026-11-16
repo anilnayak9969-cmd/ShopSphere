@@ -72,6 +72,9 @@ public interface OrderRepository extends JpaRepository<CustomerOrder, Long> {
 
     long countByStatusNot(OrderStatus status);
 
+    /** Orders actually placed (not unpaid checkout attempts) since a date — used for the cart abandonment rate. */
+    long countByStatusNotAndCreatedAtAfter(OrderStatus status, LocalDateTime after);
+
     long countByStatusIn(Collection<OrderStatus> statuses);
 
     /** Rows are [date, orders, revenue] for placed (non-pending) orders since a date. */

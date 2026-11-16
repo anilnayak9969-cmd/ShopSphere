@@ -68,6 +68,24 @@ public class SchemaPatcher implements CommandLineRunner {
         if (cash + legacyRefunds > 0) {
             log.info("Schema patch: set {} cash payment(s), logged {} earlier refund(s)", cash, legacyRefunds);
         }
+
+        // Cart Management: fill in cart_items.line_total and carts.total_price / total_quantity for carts that
+        // existed before these columns. Only rows still at 0 are touched, and updated_at is left alone.
+        int lines = jdbc.update("""
+                update cart_items ci join products p on p.product_id = ci.product_id
+                set ci.line_total = round(p.selling_price * ci.quantity, 2)
+                where ci.line_total = 0
+                """);
+        int carts = jdbc.update("""
+                update carts c
+                join (select ci.cart_id, sum(ci.line_total) total, sum(ci.quantity) units
+                      from cart_items ci group by ci.cart_id) t on t.cart_id = c.cart_id
+                set c.total_price = t.total, c.total_quantity = t.units, c.updated_at = c.updated_at
+                where c.total_price = 0 and c.total_quantity = 0
+                """);
+        if (lines + carts > 0) {
+            log.info("Schema patch: filled cart totals ({} item row(s), {} cart(s))", lines, carts);
+        }
     }
 
     private void addGeneratedColumn(String table, String column, String definition) {

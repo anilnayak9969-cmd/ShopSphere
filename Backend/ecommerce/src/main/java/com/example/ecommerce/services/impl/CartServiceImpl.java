@@ -1,6 +1,7 @@
 package com.example.ecommerce.services.impl;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,7 +68,8 @@ public class CartServiceImpl implements CartService {
         }
         item.setQuantity(newQuantity);
         item.setPriceAtAdd(product.getSellingPrice());
-        return toResponse(cartRepository.save(cart), settingsService.get());
+        item.setUpdatedAt(LocalDateTime.now());
+        return save(cart);
     }
 
     @Override
@@ -77,7 +79,8 @@ public class CartServiceImpl implements CartService {
         CartItem item = findItem(cart, cartItemId);
         checkQuantity(item.getProduct(), quantity);
         item.setQuantity(quantity);
-        return toResponse(cartRepository.save(cart), settingsService.get());
+        item.setUpdatedAt(LocalDateTime.now());
+        return save(cart);
     }
 
     @Override
@@ -85,7 +88,7 @@ public class CartServiceImpl implements CartService {
     public CartResponse removeItem(Long userId, Long cartItemId) {
         Cart cart = findCart(userId);
         cart.getItems().remove(findItem(cart, cartItemId)); // orphanRemoval deletes the row
-        return toResponse(cartRepository.save(cart), settingsService.get());
+        return save(cart);
     }
 
     @Override
@@ -95,7 +98,7 @@ public class CartServiceImpl implements CartService {
         CartItem item = findItem(cart, cartItemId);
         wishlistService.add(userId, item.getProduct().getProductId());
         cart.getItems().remove(item);
-        return toResponse(cartRepository.save(cart), settingsService.get());
+        return save(cart);
     }
 
     @Override
@@ -103,7 +106,39 @@ public class CartServiceImpl implements CartService {
     public CartResponse acknowledgePrices(Long userId) {
         Cart cart = findCart(userId);
         cart.getItems().forEach(i -> i.setPriceAtAdd(i.getProduct().getSellingPrice()));
+        return save(cart);
+    }
+
+    /** Recalculates the stored totals, records the activity time, saves, and returns the live cart. */
+    private CartResponse save(Cart cart) {
+        refreshTotals(cart);
         return toResponse(cartRepository.save(cart), settingsService.get());
+    }
+
+    /**
+     * Cart Management: keeps carts.total_price / total_quantity and cart_items.line_total in step with the
+     * items, and marks the cart as active now (updated_at drives cart-abandonment analysis).
+     * Only items that can be bought count towards the total, the same rule the cart page uses.
+     */
+    static void refreshTotals(Cart cart) {
+        BigDecimal total = BigDecimal.ZERO;
+        int units = 0;
+        for (CartItem item : cart.getItems()) {
+            Product p = item.getProduct();
+            BigDecimal line = PricingPolicy.lineTotal(p.getSellingPrice(), item.getQuantity());
+            item.setLineTotal(line);
+            if (isBuyable(p, item.getQuantity())) {
+                total = total.add(line);
+                units += item.getQuantity();
+            }
+        }
+        cart.setTotalPrice(total.setScale(2));
+        cart.setTotalQuantity(units);
+        cart.markActivity();
+    }
+
+    static boolean isBuyable(Product p, int quantity) {
+        return ProductServiceImpl.isPubliclyVisible(p) && p.getStockQuantity() >= quantity && p.getStockQuantity() > 0;
     }
 
     // --------------------------------------------------------------- helpers

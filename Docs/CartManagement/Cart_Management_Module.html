@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ShopSphere — Cart Management Module</title>
+<style>
+  @page { size: A4; margin: 18mm 17mm 20mm 17mm; }
+  :root { --navy: #14213d; --blue: #2563eb; --ink: #1f2937; --muted: #6b7280; --line: #cfd6e0; --head: #eef1f5; --warn: #fff7e6; --warn-line: #f59e0b; --ok: #e8f6ee; --ok-ink: #137a3e; }
+  * { box-sizing: border-box; }
+  body { font-family: Calibri, "Segoe UI", Arial, sans-serif; color: var(--ink); font-size: 10.6pt; line-height: 1.42; margin: 0; }
+  h1 { font-size: 23pt; color: var(--navy); margin: 0 0 2pt; letter-spacing: -0.2pt; }
+  .subtitle { font-size: 14pt; color: var(--muted); margin: 0 0 4pt; }
+  .byline { color: var(--muted); margin-bottom: 14pt; }
+  h2 { font-size: 15.5pt; color: var(--navy); margin: 18pt 0 6pt; page-break-after: avoid; }
+  h3 { font-size: 12.3pt; color: var(--blue); margin: 14pt 0 5pt; page-break-after: avoid; }
+  p { margin: 0 0 7pt; }
+  ul, ol { margin: 0 0 8pt; padding-left: 20pt; }
+  li { margin-bottom: 2.5pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 10pt; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  th, td { border: 1px solid var(--line); padding: 5pt 7pt; text-align: left; vertical-align: top; }
+  th { background: var(--head); font-weight: 700; }
+  code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 9.2pt; }
+  pre { background: #f2f4f7; padding: 7pt 9pt; font-family: Consolas, monospace; font-size: 8.5pt; line-height: 1.35; white-space: pre-wrap; margin: 4pt 0 10pt; }
+  pre .c { color: #6b7280; }
+  .note { background: var(--warn); border-left: 4pt solid var(--warn-line); padding: 6pt 9pt; margin: 6pt 0 10pt; }
+  .done { background: var(--ok); color: var(--ok-ink); font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; white-space: nowrap; font-size: 9.5pt; }
+  .new { background: #e8f0fe; color: #1d4ed8; font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; white-space: nowrap; font-size: 8.5pt; }
+  figure { margin: 8pt 0 12pt; text-align: center; page-break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid var(--line); }
+  figcaption { font-style: italic; color: #4b5563; font-size: 9.6pt; margin-top: 4pt; }
+  .page-break { page-break-before: always; }
+  .small { font-size: 9.5pt; color: var(--muted); }
+  a { color: var(--blue); }
+</style>
+</head>
+<body>
+<h1>ShopSphere — Cart Management Module</h1>
+<div class="subtitle">Assignment submission and end user documentation</div>
+<div class="byline">Anil Nayak · 16 November 2026</div>
+
+<h2>Submission details</h2>
+<table>
+  <tr><th style="width:32%">Item</th><th>Details</th></tr>
+  <tr><td>Candidate</td><td>Anil Nayak</td></tr>
+  <tr><td>Internship</td><td>ITVedant / Vibgyor Advisors integrated internship</td></tr>
+  <tr><td>Project</td><td>ShopSphere — multi-vendor e-commerce platform</td></tr>
+  <tr><td>Module</td><td>Cart Management (customer cart and Admin console)</td></tr>
+  <tr><td>Frontend</td><td>React 19, Vite, React Router, Bootstrap 5</td></tr>
+  <tr><td>Backend</td><td>Java 17, Spring Boot 4, Spring Security (JWT), Spring Data JPA</td></tr>
+  <tr><td>Database</td><td>MySQL (database <code>ecommerce_intern</code>, tables <code>carts</code> and <code>cart_items</code>)</td></tr>
+</table>
+
+<h2>1. GitHub repository link</h2>
+<p><b>Repository:</b> <a href="https://github.com/anilnayak9969-cmd/ShopSphere">https://github.com/anilnayak9969-cmd/ShopSphere</a></p>
+<table>
+  <tr><th style="width:32%">Folder</th><th>Contents</th></tr>
+  <tr><td><code>Backend/ecommerce</code></td><td>Spring Boot API. The module's code is <code>CartServiceImpl</code> (add, update, remove, stock checks, live totals), <code>CustomerController</code> (cart endpoints), <code>CartAdminServiceImpl</code> and <code>AdminCartController</code> (customer carts and abandonment), the <code>Cart</code> and <code>CartItem</code> entities and <code>CartRepository</code>.</td></tr>
+  <tr><td><code>Frontend/ecommerce</code></td><td>Customers use <code>src/pages/ProductDetails.jsx</code> (Add to cart), <code>src/pages/Cart.jsx</code> and <code>src/context/CartContext.jsx</code>; the admin screen is <code>src/pages/admin/AdminCarts.jsx</code>.</td></tr>
+  <tr><td><code>DataBase</code></td><td><code>queries.sql</code> (section 11: Cart Management SQL)</td></tr>
+  <tr><td><code>Docs/CartManagement</code></td><td>This document, its screenshots and the module README</td></tr>
+</table>
+
+<h2>2. URL of the module hosted on a free server</h2>
+<p><b>Website:</b> <a href="https://host-shop-sphere.vercel.app/">https://host-shop-sphere.vercel.app/</a> — customers use <b>Cart</b>; admins open <b>Admin console → Carts</b> (admin@shopsphere.com, password shared separately).</p>
+<div class="note"><b>Hosting status:</b> only the React frontend is deployed on Vercel; the Spring Boot backend and MySQL database are not online yet, so the hosted site cannot load carts. The new Carts screen appears there after the latest code is pushed and redeployed. All screenshots were taken from the complete application running locally.</div>
+
+<h2>3. Requirement checklist — is the module implemented?</h2>
+<p>The customer cart already existed in ShopSphere; the items marked <span class="new">ADDED</span> were built for this assignment.</p>
+<table>
+  <tr><th style="width:24%">Requirement</th><th>How ShopSphere implements it</th><th style="width:14%">Status</th></tr>
+  <tr><td><b>1. Add to cart</b><br>From the product page; stock is checked</td><td><b>Add to cart</b> / <b>Buy now</b> on the product page. The server refuses products that are not on sale, out of stock, or above the stock left (<i>"Only 3 unit(s) … are left."</i>), and caps a product at 10 units. Adding the same product again increases its quantity.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>2. Update cart</b><br>Quantity changes; total recalculated; stock checked</td><td><b>− / +</b> on each cart line. Line totals, item count, delivery fee and total are recalculated by the server from current prices on every change; <b>+</b> stops at the stock available and the server checks again. The cart also flags price changes since the item was added. Stored totals (<code>carts.total_price</code>, <code>cart_items.line_total</code>) are now kept up to date <span class="new">ADDED</span>.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>3. Remove from cart</b><br>Total recalculated</td><td><b>Remove</b> (or <b>Save for later</b>, which moves it to the wishlist); the total is recalculated at once.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>4. Cart dashboard</b><br>Customers see name, price, quantity, total; admins view carts and analyse abandonment</td><td>Customers: the <b>Shopping cart</b> page (product, price, discount, quantity, line total, items total, delivery, total). Admins: new <b>Admin → Carts</b> page <span class="new">ADDED</span> — every customer cart with products, items, total, last activity and state (Active / Abandoned / Empty), <b>abandonment analysis</b> (abandoned carts, value left behind, abandonment rate, average abandoned cart, most abandoned products), <b>View cart</b>, and a <b>Remind</b> button that notifies the customer.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>Database design</b><br>Table <code>carts</code></td><td>All assignment columns exist, split into <code>carts</code> + <code>cart_items</code> so one cart holds many products; <code>total_price</code>, <code>total_quantity</code>, <code>line_total</code> and item timestamps <span class="new">ADDED</span>. See Appendix A.</td><td><span class="done">Implemented</span></td></tr>
+</table>
+
+<h2>4. End user documentation — Cart Management</h2>
+<p>The cart holds what a customer intends to buy until checkout. It is saved on the server, so it is still there after signing out or on another device, and every price and total is worked out again from the current product data.</p>
+
+<h3>4.1 Add products to the cart (customer)</h3>
+<ol>
+  <li>Open a product. The page shows the price and how many are in stock.</li>
+  <li>Choose the quantity and click <b>Add to cart</b> (or <b>Buy now</b> to go straight to the cart). A message confirms it, and the cart badge in the header updates.</li>
+  <li>If the product is out of stock the buttons are replaced by an out-of-stock notice; the server also refuses quantities above the stock left.</li>
+</ol>
+<figure><img src="screenshots/k01-add-to-cart.png"><figcaption>Figure 1 — Adding the Nordic Dome Pendant Light to the cart from its product page.</figcaption></figure>
+
+<h3>4.2 View and update the cart (customer)</h3>
+<ol>
+  <li>Click <b>Cart</b> in the header. Each line shows the photo, product name, seller, price (with the discount), quantity and line total; the <b>Order summary</b> shows items, delivery and total.</li>
+  <li>Use <b>−</b> and <b>+</b> to change a quantity. The line total and order total update immediately. <b>+</b> is disabled once the quantity reaches the stock available (or 10).</li>
+  <li>Click <b>Remove</b> to take a product out, or <b>Save for later</b> to move it to the wishlist. The totals are recalculated.</li>
+  <li>Click <b>Proceed to checkout</b> when ready. Unavailable items must be removed first.</li>
+</ol>
+<figure><img src="screenshots/k02-cart.png"><figcaption>Figure 2 — The cart: product name, price, quantity and line total, with the order summary.</figcaption></figure>
+<figure><img src="screenshots/k03-quantity-updated.png"><figcaption>Figure 3 — After pressing + on the book: quantity 3, and the line total and order total updated straight away.</figcaption></figure>
+<figure><img src="screenshots/k04-stock-check.png"><figcaption>Figure 4 — Stock check: only 3 pendant lights are in stock, so the quantity stops at 3 and + is disabled.</figcaption></figure>
+<figure><img src="screenshots/k05-item-removed.png"><figcaption>Figure 5 — After Remove: the book is gone and the total is recalculated.</figcaption></figure>
+
+<h3>4.3 Customer carts and abandonment (admin)</h3>
+<ol>
+  <li>Sign in with the admin account and click <b>Carts</b> in the left menu.</li>
+  <li>The summary cards show <b>Active carts</b> (and their value), <b>Abandoned carts</b> (and the value left behind), the <b>Abandonment rate</b> and the <b>Average abandoned cart</b>. <b>Most abandoned products</b> lists what customers leave behind most often.</li>
+  <li>The table lists every customer cart: customer, products, items, total, last activity and state. Filter with <b>All carts / Active / Abandoned / Empty</b>, search by customer name or email, and choose after how long an idle cart counts as abandoned (1 hour to 3 days; 1 day by default).</li>
+  <li>Click <b>View cart</b> to see the cart exactly as the customer sees it (products, prices, quantities, stock, totals).</li>
+  <li>For an abandoned cart, click <b>Remind</b> (or <b>Send reminder</b>) to send the customer a notification listing what they left and linking to their cart. A cart is reminded once until the customer comes back.</li>
+</ol>
+<table>
+  <tr><th style="width:30%">Term</th><th>Meaning</th></tr>
+  <tr><td>Active cart</td><td>Has items and the customer changed it within the chosen idle time</td></tr>
+  <tr><td>Abandoned cart</td><td>Has items but no activity for longer than the chosen idle time</td></tr>
+  <tr><td>Empty cart</td><td>No items (for example after checking out)</td></tr>
+  <tr><td>Abandonment rate</td><td>Abandoned carts ÷ (abandoned carts + orders placed in the last 30 days) × 100</td></tr>
+</table>
+<figure><img src="screenshots/k06-cart-dashboard.png"><figcaption>Figure 6 — Cart management: summary cards, most abandoned products, and every customer cart with its state.</figcaption></figure>
+<figure><img src="screenshots/k07-abandoned-filter.png"><figcaption>Figure 7 — The Abandoned filter: Rahul Kumar Mehta's cart (₹5,061.52) has been idle for 3 days.</figcaption></figure>
+<figure><img src="screenshots/k08-view-cart.png"><figcaption>Figure 8 — View cart: the products, prices, quantities, stock and totals of the abandoned cart.</figcaption></figure>
+<figure><img src="screenshots/k09-reminder-sent.png"><figcaption>Figure 9 — After Send reminder: the customer is notified and the cart shows when the reminder was sent.</figcaption></figure>
+
+<h3>4.4 Rules and messages</h3>
+<table>
+  <tr><th style="width:34%">Situation</th><th>Message shown</th></tr>
+  <tr><td>Quantity above the stock left</td><td><i>Only N unit(s) of … are left.</i> (or <i>… is out of stock.</i>)</td></tr>
+  <tr><td>More than 10 of one product</td><td><i>You can buy at most 10 units of a product per order.</i></td></tr>
+  <tr><td>Product no longer on sale</td><td><i>This product is not available.</i>; in the cart: <i>No longer available</i></td></tr>
+  <tr><td>Stock dropped after adding</td><td>Line shows <i>Only N left — reduce the quantity</i>; checkout is blocked until fixed</td></tr>
+  <tr><td>Price changed after adding</td><td>A notice shows the old and new price; the customer confirms before checkout</td></tr>
+  <tr><td>Reminder for a cart that is not abandoned / already reminded / inactive customer</td><td><i>Reminders are only for abandoned carts …</i> / <i>A reminder was already sent …</i> / <i>This customer's account is inactive.</i></td></tr>
+</table>
+
+<h2>5. Screenshots of the running application</h2>
+<p>Figures 1–9 were taken from the application running locally (React on <code>localhost:5173</code>, Spring Boot on <code>localhost:8080</code>, MySQL <code>ecommerce_intern</code>). The demo customer Priya Sharma built a cart (Figures 1–5). For the abandonment figures, the demo customer Rahul Kumar Mehta added two products and his cart's last activity was set three days back in the local database to simulate a cart left behind.</p>
+
+<h2 class="page-break">Appendix A: database tables</h2>
+<p>The assignment describes one <code>carts</code> row per product. ShopSphere keeps one cart per customer (<code>carts</code>) and one row per product in it (<code>cart_items</code>), which avoids repeating the customer and totals on every row.</p>
+<table>
+  <tr><th style="width:18%">Assignment column</th><th style="width:19%">Assignment type</th><th style="width:33%">ShopSphere column and type</th><th>Meaning</th></tr>
+  <tr><td>cart_id</td><td>int (pk, auto_increment)</td><td><code>carts.cart_id</code> BIGINT, primary key</td><td>Unique identifier for each cart</td></tr>
+  <tr><td>customer_id</td><td>int (fk)</td><td><code>carts.user_id</code> BIGINT, unique, FK → <code>users</code> (role CUSTOMER)</td><td>The customer who owns the cart</td></tr>
+  <tr><td>product_id</td><td>int (fk)</td><td><code>cart_items.product_id</code> BIGINT, FK → <code>products</code>; unique per cart</td><td>A product in the cart</td></tr>
+  <tr><td>quantity</td><td>int</td><td><code>cart_items.quantity</code> INT; <code>carts.total_quantity</code> INT</td><td>Units of each product; units in the cart</td></tr>
+  <tr><td>total_price</td><td>decimal(10,2)</td><td><code>carts.total_price</code> DECIMAL(12,2); <code>cart_items.line_total</code> DECIMAL(12,2)</td><td>Total price of the items; price × quantity per product</td></tr>
+  <tr><td>created_at</td><td>datetime</td><td><code>carts.created_at</code>; <code>cart_items.added_at</code> DATETIME(6)</td><td>When the cart / item was created</td></tr>
+  <tr><td>updated_at</td><td>datetime</td><td><code>carts.updated_at</code>; <code>cart_items.updated_at</code> DATETIME(6)</td><td>When the cart was last changed (used for abandonment)</td></tr>
+</table>
+<p>Also: <code>cart_items.price_at_add</code> (to flag price changes) and <code>carts.reminder_sent_at</code>. The stored totals are a snapshot of the last change; the cart page and checkout always recalculate from current prices.</p>
+
+<h2>Appendix B: SQL behind each action</h2>
+<p>The full, tested set is in <code>DataBase/queries.sql</code>, section 11.</p>
+<pre><span class="c">-- Add to cart only if in stock</span>
+INSERT INTO cart_items (cart_id, product_id, quantity, price_at_add, line_total, added_at, updated_at)
+SELECT 4, product_id, 1, selling_price, selling_price, NOW(6), NOW(6)
+FROM products WHERE product_id = 79 AND stock_quantity &gt;= 1
+ON DUPLICATE KEY UPDATE quantity = quantity + 1;
+
+<span class="c">-- Update quantity (checked against stock), then recalculate the cart</span>
+UPDATE cart_items ci JOIN products p ON p.product_id = ci.product_id
+SET ci.quantity = 3, ci.line_total = p.selling_price * 3, ci.updated_at = NOW(6)
+WHERE ci.cart_id = 4 AND ci.product_id = 63 AND p.stock_quantity &gt;= 3;
+UPDATE carts c
+SET c.total_price    = (SELECT COALESCE(SUM(line_total), 0) FROM cart_items WHERE cart_id = c.cart_id),
+    c.total_quantity = (SELECT COALESCE(SUM(quantity), 0)   FROM cart_items WHERE cart_id = c.cart_id),
+    c.updated_at = NOW(6)
+WHERE c.cart_id = 4;
+
+<span class="c">-- Remove from cart (then the same recalculation)</span>
+DELETE FROM cart_items WHERE cart_id = 4 AND product_id = 63;
+
+<span class="c">-- Admin: cart state and abandonment rate</span>
+SELECT c.cart_id, u.full_name, c.total_quantity, c.total_price, c.updated_at,
+       CASE WHEN c.total_quantity = 0 THEN 'EMPTY'
+            WHEN c.updated_at &lt; NOW() - INTERVAL 24 HOUR THEN 'ABANDONED' ELSE 'ACTIVE' END AS state
+FROM carts c JOIN users u ON u.user_id = c.user_id WHERE u.role = 'CUSTOMER';</pre>
+
+<h2>Appendix C: API endpoints of the module</h2>
+<table>
+  <tr><th style="width:9%">Method</th><th style="width:40%">Path</th><th>Purpose</th></tr>
+  <tr><td>GET</td><td><code>/customer/cart</code></td><td>Customer: the cart with live prices and totals</td></tr>
+  <tr><td>POST</td><td><code>/customer/cart/items</code></td><td>Add <code>{ productId, quantity }</code> (stock checked)</td></tr>
+  <tr><td>PUT</td><td><code>/customer/cart/items/{id}</code></td><td>Update the quantity (stock checked)</td></tr>
+  <tr><td>DELETE</td><td><code>/customer/cart/items/{id}</code></td><td>Remove an item</td></tr>
+  <tr><td>POST</td><td><code>/customer/cart/items/{id}/save-for-later</code></td><td>Move to the wishlist</td></tr>
+  <tr><td>GET</td><td><code>/admin/carts?state=&amp;search=&amp;abandonedAfterHours=</code></td><td>Admin: customer carts</td></tr>
+  <tr><td>GET</td><td><code>/admin/carts/summary</code></td><td>Admin: active/abandoned counts and values, rate, top abandoned products</td></tr>
+  <tr><td>GET</td><td><code>/admin/carts/{id}</code></td><td>Admin: one cart in full</td></tr>
+  <tr><td>POST</td><td><code>/admin/carts/{id}/remind</code></td><td>Admin: notify the customer about an abandoned cart</td></tr>
+</table>
+</body>
+</html>

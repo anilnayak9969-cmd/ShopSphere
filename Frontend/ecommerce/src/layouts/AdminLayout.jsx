@@ -9,6 +9,7 @@ const LINKS = [
   { to: '/admin/categories', label: 'Categories', icon: 'bi-tags' },
   { to: '/admin/products', label: 'Products', icon: 'bi-box-seam' },
   { to: '/admin/orders', label: 'Orders', icon: 'bi-receipt' },
+  { to: '/admin/carts', label: 'Carts', icon: 'bi-cart3' },
   { to: '/admin/payments', label: 'Payments & refunds', icon: 'bi-credit-card' },
   { to: '/admin/returns', label: 'Returns', icon: 'bi-arrow-counterclockwise' },
   { to: '/admin/coupons', label: 'Coupons', icon: 'bi-ticket-perforated' },

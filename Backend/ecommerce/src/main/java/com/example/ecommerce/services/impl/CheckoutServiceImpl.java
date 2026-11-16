@@ -298,7 +298,10 @@ public class CheckoutServiceImpl implements CheckoutService {
         Set<Long> productIds = order.getItems().stream().map(i -> i.getProduct().getProductId())
                 .collect(Collectors.toSet());
         cartRepository.findByUserId(order.getCustomer().getId())
-                .ifPresent(cart -> cart.getItems().removeIf(i -> productIds.contains(i.getProduct().getProductId())));
+                .ifPresent(cart -> {
+                    cart.getItems().removeIf(i -> productIds.contains(i.getProduct().getProductId()));
+                    CartServiceImpl.refreshTotals(cart); // bought items leave the cart: it is not abandoned
+                });
 
         notificationService.notify(order.getCustomer(), "Order placed",
                 "Your order " + order.getOrderNumber() + " has been placed"

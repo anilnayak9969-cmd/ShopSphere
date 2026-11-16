@@ -1,6 +1,7 @@
 package com.example.ecommerce.entites;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -44,4 +45,17 @@ public class CartItem {
     /** Selling price when the item was added or last reviewed — lets the cart flag price changes. */
     @Column(name = "price_at_add", precision = 12, scale = 2)
     private BigDecimal priceAtAdd;
+
+    /** Cart Management: unit price × quantity, as of the last change. */
+    @Column(name = "line_total", nullable = false, precision = 12, scale = 2,
+            columnDefinition = "decimal(12,2) not null default 0.00")
+    private BigDecimal lineTotal = BigDecimal.ZERO;
+
+    @Column(name = "added_at", nullable = false, updatable = false,
+            columnDefinition = "datetime(6) not null default current_timestamp(6)")
+    private LocalDateTime addedAt = LocalDateTime.now();
+
+    @Column(name = "updated_at", nullable = false,
+            columnDefinition = "datetime(6) not null default current_timestamp(6)")
+    private LocalDateTime updatedAt = LocalDateTime.now();
 }

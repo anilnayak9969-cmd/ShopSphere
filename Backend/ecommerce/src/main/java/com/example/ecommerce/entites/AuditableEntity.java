@@ -33,4 +33,9 @@ public abstract class AuditableEntity {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    /** Marks the row as changed now, even when only its child rows changed (e.g. cart items). */
+    protected void touch() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }
