@@ -47,6 +47,22 @@ Built against the given `users` table (`user_id`, `first_name`, `last_name`, `em
 3. **Update customer details**: edit name, email, mobile number and account status (email stays unique).
 4. **Deactivate**: a **soft delete** through `active` after a warning. The customer is refused at sign-in, and their profile, addresses and orders are kept. **Activate** restores the account.
 
+### Module 9 — Review and Rating Management (assignment module)
+Table `reviews` (`review_id`, `product_id`, `user_id` = customer, `rating` 1–5, `comment` = review text + `title`, `created_at`, `updated_at`, Boolean `status` = approved, plus `moderation_status`, `rejection_reason`, `moderated_at`). Guide, screenshots and PDF: [`Docs/ReviewManagement`](Docs/ReviewManagement/README.md).
+
+1. **Add a review / rating**: customers whose item was delivered rate it 1–5 stars with an optional headline and text, once per product. New reviews wait for approval.
+2. **Review moderation** (**Admin → Reviews**): pending reviews first, status/star filters, search, **Approve**, **Reject** with a reason the customer sees, **Delete**. Customers and admins are notified.
+3. **View product reviews**: the product page shows approved reviews only, with the average, 5★–1★ bars, first names and *Verified purchase*. The stored product rating counts approved reviews only.
+4. **Update / delete**: customers edit (checked again) or delete their own review on the product page or in **My reviews** (status and reason shown); admins delete inappropriate reviews.
+
+### Module 8 — Shipping Management (assignment module)
+Table `shipping` (`shipping_id`, `order_id`, `courier_service`, `tracking_number`, `shipping_status`, `shipping_cost`, `created_at`, `updated_at`, plus method, zone, weight and delivery dates) and `products.weight_kg`. Guide, screenshots and PDF: [`Docs/ShippingManagement`](Docs/ShippingManagement/README.md).
+
+1. **Shipping cost** from **weight** (₹15 per started 0.5 kg above 0.5 kg), **delivery location** (metro / rest of India +₹20 / remote +₹50, from city, state and PIN) and **method**. At checkout the customer picks **Standard** (free from ₹499 up to 2 kg) or **Express** (×2, minimum ₹99), each with an arrival date.
+2. **Shipping dashboard** (**Admin → Shipping**): status cards, shipping charged, search, status filter, and each order's destination, zone, method, cost, weight, courier, tracking number, status and due date.
+3. **Track shipment**: **Track my order** (`/track`) finds the customer's own parcel by tracking number and shows progress, items and tracking history.
+4. **Update shipping information**: **Ship / Update** sets courier, tracking number and status (forward only, numbers unique per order). The order's items move with it and the customer is notified.
+
 ### Module 7 — Wishlist Management (assignment module)
 Table `wishlist_items` (`wishlist_item_id`, `user_id`, `product_id`, `created_at`, `updated_at`). Guide, screenshots and PDF: [`Docs/WishlistManagement`](Docs/WishlistManagement/README.md).
 
@@ -225,7 +241,9 @@ Docs/
 ├── CustomerManagement/                 Customer Management README, submission PDF (+ HTML source) and screenshots
 ├── PaymentManagement/                  Payment Management README, submission PDF (+ HTML source) and screenshots
 ├── CartManagement/                     Cart Management README, submission PDF (+ HTML source) and screenshots
-└── WishlistManagement/                 Wishlist Management README, submission PDF (+ HTML source) and screenshots
+├── WishlistManagement/                 Wishlist Management README, submission PDF (+ HTML source) and screenshots
+├── ShippingManagement/                 Shipping Management README, submission PDF (+ HTML source) and screenshots
+└── ReviewManagement/                   Review and Rating Management README, submission PDF (+ HTML source) and screenshots
 ```
 
 ---
@@ -240,7 +258,7 @@ In MySQL Workbench open `DataBase/Internship_Ecommerce.sql` and execute it, or r
 ```bash
 mysql -u root -p < DataBase/Internship_Ecommerce.sql
 ```
-This creates `ecommerce_intern`, all 23 tables, the platform settings row and the `WELCOME10` coupon. Then load the catalogue with `mysql -u root -p ecommerce_intern < DataBase/catalog_data.sql`, or just start the backend, which loads the same catalogue itself. It is safe to run more than once. The backend also creates and updates tables automatically, so this step is optional. `DataBase/queries.sql` contains ready-to-run queries for the Category Management module (section 1), the Product Management module (section 7), the Order Management module (section 8), the Customer Management module (section 9), the Payment Management module (section 10), the Cart Management module (section 11), the Wishlist Management module (section 12) and reports.
+This creates `ecommerce_intern`, all 23 tables, the platform settings row and the `WELCOME10` coupon. Then load the catalogue with `mysql -u root -p ecommerce_intern < DataBase/catalog_data.sql`, or just start the backend, which loads the same catalogue itself. It is safe to run more than once. The backend also creates and updates tables automatically, so this step is optional. `DataBase/queries.sql` contains ready-to-run queries for the Category Management module (section 1), the Product Management module (section 7), the Order Management module (section 8), the Customer Management module (section 9), the Payment Management module (section 10), the Cart Management module (section 11), the Wishlist Management module (section 12), the Shipping Management module (section 13), the Review and Rating Management module (section 14) and reports.
 
 ### 2. Backend secrets
 Copy `Backend/ecommerce/src/main/resources/application-secrets.example.properties` to `application-secrets.properties` in the same folder and fill it in. This file is git-ignored.
@@ -320,7 +338,8 @@ All endpoints are prefixed with `/api`. Protected endpoints need the header `Aut
 | Wishlist | `GET /customer/wishlist`, `POST/DELETE /customer/wishlist/{productId}` |
 | Addresses | `GET/POST /customer/addresses`, `PUT/DELETE /customer/addresses/{id}`, `PATCH /customer/addresses/{id}/default` |
 | Coupons | `POST /customer/coupons/apply` (preview on the current cart) |
-| Checkout | `POST /customer/checkout` (`paymentMethod`: `RAZORPAY` or `COD`), `POST /customer/payments/verify`, `POST /customer/payments/failed`, `GET /customer/payments` |
+| Shipping | `POST /customer/shipping/quote` (Standard and Express price for the cart and an address), `GET /customer/track/{trackingNumber}` |
+| Checkout | `POST /customer/checkout` (`paymentMethod`: `RAZORPAY` or `COD`; `shippingMethod`: `STANDARD` or `EXPRESS`), `POST /customer/payments/verify`, `POST /customer/payments/failed`, `GET /customer/payments` |
 | Orders & returns | `GET /customer/orders`, `GET /customer/orders/{id}`, `POST /customer/orders/{id}/cancel`, `POST/GET /customer/returns` |
 | Reviews | `GET/PUT/DELETE /customer/products/{productId}/review`, `GET /customer/reviews` |
 
@@ -344,16 +363,17 @@ All endpoints are prefixed with `/api`. Protected endpoints need the header `Aut
 | Dashboard & people | `GET /admin/dashboard`, `GET /admin/users?role=`, `POST /admin/admins` (create an admin), `PATCH /admin/sellers/{id}/status`, `PATCH /admin/users/{id}/status`, `GET /admin/delivery-partners?status=&search=`, `PATCH /admin/delivery-partners/{id}/status` |
 | Product Management | `GET /admin/products?search=&categoryId=&approval=&active=`, `GET /admin/products/summary`, `GET /admin/products/{id}`, `POST /admin/products` (`{ sellerId, product }`), `PUT /admin/products/{id}`, `PATCH /admin/products/{id}/status` (deactivate/activate), `PATCH /admin/products/{id}/approve`, `PATCH /admin/products/{id}/reject`, `PATCH /admin/products/{id}/category` |
 | Order Management | `GET /admin/orders?group=PENDING\|SHIPPED\|DELIVERED\|CANCELLED\|RETURNS\|UNPAID&status=&search=`, `GET /admin/orders/summary`, `GET /admin/orders/{id}`, `PATCH /admin/orders/{id}/status` (`{ status, note }`; forward jumps allowed; `CANCELLED` cancels unshipped items) |
+| Shipping Management | `GET /admin/shipping?status=&search=`, `GET /admin/shipping/summary`, `GET /admin/shipping/{orderId}`, `PUT /admin/shipping/{orderId}` (`{ courierService, trackingNumber, status, note }`; forward only) |
 | Cart Management | `GET /admin/carts?state=&search=&abandonedAfterHours=`, `GET /admin/carts/summary`, `GET /admin/carts/{id}`, `POST /admin/carts/{id}/remind` |
 | Payment Management | `GET /admin/payments?status=&refundedOnly=&method=&search=`, `GET /admin/payments/summary`, `POST /admin/payments/{id}/refund` (`{ amount, reason }`), `GET /admin/refunds`, `GET /admin/payments/{id}/refunds` |
 | Payments & returns | `GET /admin/payments?status=&refundedOnly=`, `GET /admin/returns?status=`, `PATCH /admin/returns/{id}` |
 | Reports, settings, inbox | `GET /admin/reports?days=`, `GET/PUT /admin/settings`, `GET /admin/messages?resolved=`, `PATCH /admin/messages/{id}` |
 | Coupons | `GET/POST /admin/coupons`, `PUT /admin/coupons/{id}`, `PATCH /admin/coupons/{id}/status` |
-| Reviews | `GET /admin/reviews?rating=`, `DELETE /admin/reviews/{id}` |
+| Review moderation | `GET /admin/reviews?status=PENDING\|APPROVED\|REJECTED&rating=&search=`, `GET /admin/reviews/summary`, `PATCH /admin/reviews/{id}/approve`, `PATCH /admin/reviews/{id}/reject` (`{ reason }`), `DELETE /admin/reviews/{id}` |
 
 ---
 
-## Database design (23 tables)
+## Database design (25 tables)
 
 | Table | Purpose / key relationships |
 |-------|------------------------------|
@@ -362,16 +382,17 @@ All endpoints are prefixed with `/api`. Protected endpoints need the header `Aut
 | `seller_profiles` | One per seller: business type, GSTIN, pickup/business address, description, logo, support contacts |
 | `delivery_partner_profiles` | One per delivery partner: vehicle type, registration number, service city and PIN |
 | `categories` | Assignment table; soft delete via `status`; optional `parent_category_id` for subcategories |
-| `products` | Product Management table. Belongs to a category and a seller. Price, discount, selling price, stock (`stock_quantity` = inventory count), soft delete via `active`, `approval_status`, `rejection_reason`, `sold_count`, rating |
+| `products` | Product Management table. Belongs to a category and a seller. Price, discount, selling price, stock (`stock_quantity` = inventory count), soft delete via `active`, `approval_status`, `rejection_reason`, `sold_count`, rating, `weight_kg` (packed weight for shipping) |
 | `product_images` / `product_specifications` | Gallery photos and specification rows (many per product) |
 | `carts` / `cart_items` | One cart per customer; `price_at_add` for price-change notices; saved-for-later flag |
 | `wishlist_items` | Saved products; `(user_id, product_id)` unique |
 | `addresses` | Customer address book with one default |
 | `orders` / `order_items` | Order Management tables. Address, product and price **snapshots**, coupon, payment method, `tax_amount` (GST included), `active` (false = cancelled, soft delete). Each item has its own `item_status`, courier and tracking number, and `delivery_partner_id` / `assigned_at` when a ShopSphere partner delivers it |
+| `shipping` | Shipping Management table. One row per order (`order_id` unique): courier, tracking number (indexed), `shipping_status`, `shipping_cost`, `shipping_method` (STANDARD/EXPRESS), `delivery_zone`, `weight_kg`, estimated delivery, shipped and delivered times |
 | `payments` | Payment Management table. Method (RAZORPAY/COD), `instrument` (card, UPI, net banking, wallet, PayPal, cash) with a masked detail, status, Razorpay IDs, `refunded_amount`. Card data is never stored |
 | `refunds` | Refund log: one row per refund transaction (amount, Razorpay or manual, processed/failed, `rfnd_…` id, reason, issued by) |
 | `return_requests` | One per order item: reason, status, refund amount, the seller who decides |
-| `reviews` | One review per customer per product; `(product_id, user_id)` unique |
+| `reviews` | Review and Rating Management table. One review per customer per product (`(product_id, user_id)` unique); `rating` 1–5, `title`, `comment`; Boolean `status` (approved), `moderation_status` (PENDING/APPROVED/REJECTED), `rejection_reason`, `moderated_at`. Only approved reviews are shown and counted |
 | `coupons` / `coupon_redemptions` | Discount rules; one redemption per customer, linked to the order |
 | `order_item_events` | Tracking history: one row per status change, with a plain-words description and time |
 | `notifications` | In-app notifications per user with a link and read flag |
@@ -387,7 +408,7 @@ Money uses `DECIMAL(12,2)`. Products and categories are never hard-deleted, so o
 ```bash
 cd Backend/ecommerce && ./mvnw test
 ```
-There are **107 tests**: Wishlist Management rules (add once, on-sale only, 100-item limit, availability states, remove, move to cart in one transaction with the wishlist unchanged on failure), Cart Management rules (stock checks on add and update, stored totals, quantity merge, remove, ownership, Active/Abandoned/Empty, abandonment rate and top products, one reminder per abandoned cart), Payment Management rules (Razorpay method mapping incl. PayPal, masked card/UPI details, every refund logged with its Razorpay refund ID, failed refunds logged but not counted, admin refunds only for cancelled/returned orders and never above what was paid), Customer Management rules (admin-added customers verified and active with a hashed password, duplicate emails refused, contact and status updates, soft-delete deactivation, customer-only access, order history totals), Order Management rules (GST included in the total, dashboard status groups, admin Pending → Shipped jumps with every step recorded, no backward moves, customer cancel until shipping, no admin cancel after shipping), role-based registration (customer, seller, delivery partner and admin access-code rules, vehicle-number formats), Category Management rules (including subcategory cycles), Product Management rules (admin add is approved and live, unapproved stores and duplicate SKUs refused, updates keep approval, inactive categories refused, deactivation is a soft delete), OTP security, Razorpay checkout and webhook signatures, idempotent payment verification, the sold-out refund path, coupon rules (caps, minimum order, expiry, usage limits, one use per customer), verified-purchase reviews, pricing, shipping and commission rules, COD checkout, and item-level order status derivation. The `contextLoads` test needs MySQL running.
+There are **138 tests**: Review and Rating Management rules (buyers only, 1–5 stars, new and edited reviews wait for approval, approve publishes and recalculates the rating, reject needs a reason, product page shows approved reviews only, customer and admin delete), Shipping Management rules (zone from city, state and PIN, weight steps, free standard delivery and the heavy-parcel charge, express pricing and dates, quotes, shipping with the admin's courier and tracking number, no backward moves, unique tracking numbers, cancelled orders refused, tracking only your own parcels, one history line per parcel step), Wishlist Management rules (add once, on-sale only, 100-item limit, availability states, remove, move to cart in one transaction with the wishlist unchanged on failure), Cart Management rules (stock checks on add and update, stored totals, quantity merge, remove, ownership, Active/Abandoned/Empty, abandonment rate and top products, one reminder per abandoned cart), Payment Management rules (Razorpay method mapping incl. PayPal, masked card/UPI details, every refund logged with its Razorpay refund ID, failed refunds logged but not counted, admin refunds only for cancelled/returned orders and never above what was paid), Customer Management rules (admin-added customers verified and active with a hashed password, duplicate emails refused, contact and status updates, soft-delete deactivation, customer-only access, order history totals), Order Management rules (GST included in the total, dashboard status groups, admin Pending → Shipped jumps with every step recorded, no backward moves, customer cancel until shipping, no admin cancel after shipping), role-based registration (customer, seller, delivery partner and admin access-code rules, vehicle-number formats), Category Management rules (including subcategory cycles), Product Management rules (admin add is approved and live, unapproved stores and duplicate SKUs refused, updates keep approval, inactive categories refused, deactivation is a soft delete), OTP security, Razorpay checkout and webhook signatures, idempotent payment verification, the sold-out refund path, coupon rules (caps, minimum order, expiry, usage limits, one use per customer), verified-purchase reviews, pricing, shipping and commission rules, COD checkout, and item-level order status derivation. The `contextLoads` test needs MySQL running.
 
 Frontend: `npm run lint` and `npm run build`.
 

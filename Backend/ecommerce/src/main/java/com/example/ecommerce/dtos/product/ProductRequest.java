@@ -63,5 +63,11 @@ public record ProductRequest(
 
         /* Specification table rows, e.g. {"name": "Battery life", "value": "30 hours"}. */
         @Size(max = 20, message = "You can add at most 20 specifications")
-        List<@Valid SpecificationDto> specifications) {
+        List<@Valid SpecificationDto> specifications,
+
+        /* Shipping Management: packed weight in kg (optional; null keeps the current weight, 0.5 kg for new). */
+        @DecimalMin(value = "0.05", message = "Weight must be at least 0.05 kg")
+        @DecimalMax(value = "50.00", message = "Weight cannot exceed 50 kg")
+        @Digits(integer = 3, fraction = 2, message = "Weight can have at most 2 decimal places")
+        BigDecimal weightKg) {
 }

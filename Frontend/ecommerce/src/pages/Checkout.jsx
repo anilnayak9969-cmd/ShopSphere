@@ -12,7 +12,8 @@ import CheckoutSteps from '../components/CheckoutSteps'
 import CouponBox from '../components/CouponBox'
 import { Alert, PageLoader, SafeImage } from '../components/ui'
 import { getErrorMessage, getFieldErrors } from '../utils/errors'
-import { formatPrice, includedGst } from '../utils/format'
+import { formatDate, formatPrice, includedGst } from '../utils/format'
+import shippingService from '../services/shippingService'
 import { loadRazorpay } from '../utils/razorpay'
 import { getSavedCoupon, saveCoupon } from '../utils/couponStorage'
 
@@ -39,6 +40,10 @@ export default function Checkout() {
   const [method, setMethod] = useState('RAZORPAY')
   const [stage, setStage] = useState('idle') // idle | creating | paying | verifying
   const [paymentError, setPaymentError] = useState(null)
+  // Shipping Management: priced by the server from weight, delivery zone and method.
+  const [shipQuote, setShipQuote] = useState(null)
+  const [shipMethod, setShipMethod] = useState('STANDARD')
+  const [shipError, setShipError] = useState(null)
 
   useEffect(() => {
     accountService
@@ -66,15 +71,40 @@ export default function Checkout() {
       })
   }, [subtotal])
 
+  // Price delivery for the chosen address (and coupon) once the address step is done.
+  const couponCode = quote?.code || null
+  const shipAddress = step >= 1 ? (selected === NEW_ADDRESS ? form : addresses?.find((a) => a.addressId === selected)) : null
+  const shipKey = shipAddress ? `${shipAddress.city}|${shipAddress.state}|${shipAddress.pincode}|${couponCode}|${subtotal}` : null
+  useEffect(() => {
+    if (!shipKey) return
+    const [city, state, pincode] = shipKey.split('|')
+    let cancelled = false
+    shippingService
+      .quote({ city, state, pincode, couponCode })
+      .then((q) => {
+        if (!cancelled) {
+          setShipQuote(q)
+          setShipError(null)
+        }
+      })
+      .catch((err) => !cancelled && setShipError(getErrorMessage(err)))
+    return () => {
+      cancelled = true
+    }
+  }, [shipKey, couponCode])
+
   if (loading && !cart) return <PageLoader />
   if (cart && cart.items.length === 0 && stage === 'idle') return <Navigate to="/cart" replace />
   if (cart && cart.hasPriceChanges && stage === 'idle') return <Navigate to="/cart" replace />
   if (!cart || addresses === null) return <PageLoader />
 
   const busy = stage !== 'idle'
-  const totals = quote
-    ? { discount: quote.discount, shipping: quote.shippingFee, total: quote.total }
-    : { discount: 0, shipping: cart.shippingFee, total: cart.total }
+  const shipOption = shipQuote?.options.find((o) => o.method === shipMethod)
+  const totals = shipOption
+    ? { discount: shipQuote.discount, shipping: shipOption.cost, total: shipOption.total }
+    : quote
+      ? { discount: quote.discount, shipping: quote.shippingFee, total: quote.total }
+      : { discount: 0, shipping: cart.shippingFee, total: cart.total }
   const address = selected === NEW_ADDRESS ? form : addresses.find((a) => a.addressId === selected)
   const codAllowed = settings?.codEnabled && Number(totals.total) <= Number(settings.codMaxAmount)
 
@@ -140,6 +170,7 @@ export default function Checkout() {
         pincode: address.pincode,
         couponCode: quote?.code || null,
         paymentMethod: method,
+        shippingMethod: shipMethod,
       })
     } catch (err) {
       const fieldErrors = getFieldErrors(err)
@@ -212,9 +243,10 @@ export default function Checkout() {
         </div>
       )}
       <div className="ss-summary-row">
-        <span>Delivery</span>
+        <span>{shipOption ? `Delivery · ${shipOption.method === 'EXPRESS' ? 'Express' : 'Standard'}` : 'Delivery (estimated)'}</span>
         <span>{Number(totals.shipping) === 0 ? <span className="text-success">Free</span> : formatPrice(totals.shipping)}</span>
       </div>
+      {shipOption && <div className="small text-muted text-end">Arrives by {formatDate(shipOption.estimatedDelivery)}</div>}
       <div className="ss-divider" />
       <div className="ss-summary-row ss-summary-total">
         <span>Total payable</span>
@@ -311,6 +343,35 @@ export default function Checkout() {
                   <div className="fw-semibold">{formatPrice(item.lineTotal)}</div>
                 </div>
               ))}
+              <div className="ss-divider" />
+              <h2 className="h5 mb-1">Delivery method</h2>
+              {shipError ? (
+                <Alert variant="danger">{shipError}</Alert>
+              ) : !shipQuote ? (
+                <p className="small text-muted">Working out delivery options…</p>
+              ) : (
+                <>
+                  <p className="small text-muted mb-2">
+                    Delivering to a {shipQuote.zoneLabel.toLowerCase()} · parcel weight {Number(shipQuote.weightKg).toFixed(2)} kg
+                  </p>
+                  <div className="d-grid gap-2 mb-2" role="radiogroup" aria-label="Delivery method">
+                    {shipQuote.options.map((o) => (
+                      <label key={o.method} className={`ss-pay-option ${shipMethod === o.method ? 'selected' : ''}`}>
+                        <input type="radio" name="ship-method" className="form-check-input mt-1" checked={shipMethod === o.method} onChange={() => setShipMethod(o.method)} />
+                        <span className="flex-grow-1">
+                          <span className="d-flex justify-content-between gap-2">
+                            <strong>{o.label}</strong>
+                            <strong>{o.free ? <span className="text-success">Free</span> : formatPrice(o.cost)}</strong>
+                          </span>
+                          <span className="d-block small text-muted">
+                            {o.minDays}–{o.maxDays} days · arrives by {formatDate(o.estimatedDelivery)}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
               <div className="ss-divider" />
               <CouponBox quote={quote} onApplied={(q) => { setQuote(q); saveCoupon(q.code) }} onRemoved={() => { setQuote(null); saveCoupon('') }} id="checkout-coupon" />
               <div className="d-flex gap-2 mt-4">

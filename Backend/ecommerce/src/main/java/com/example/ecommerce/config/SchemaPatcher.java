@@ -86,6 +86,85 @@ public class SchemaPatcher implements CommandLineRunner {
         if (lines + carts > 0) {
             log.info("Schema patch: filled cart totals ({} item row(s), {} cart(s))", lines, carts);
         }
+        patchShipping();
+        patchReviews();
+    }
+
+    /**
+     * Review Management: reviews written before moderation existed were already public, so they are
+     * marked approved; the Boolean status column always mirrors moderation_status.
+     */
+    private void patchReviews() {
+        int approved = jdbc.update("""
+                update reviews set moderation_status = 'APPROVED', status = b'1', moderated_at = updated_at
+                where moderation_status is null
+                """);
+        int synced = jdbc.update("""
+                update reviews set status = if(moderation_status = 'APPROVED', b'1', b'0')
+                where status is null or status <> if(moderation_status = 'APPROVED', b'1', b'0')
+                """);
+        if (approved + synced > 0) {
+            log.info("Schema patch: reviews moderation ({} approved existing review(s), {} status synced)", approved, synced);
+        }
+    }
+
+    /**
+     * Shipping Management: realistic product weights (once, while every product still has the 0.5 kg default)
+     * and a shipping record for every order placed before the shipping table existed.
+     */
+    private void patchShipping() {
+        Integer custom = jdbc.queryForObject("select count(*) from products where weight_kg <> 0.50", Integer.class);
+        if (custom != null && custom == 0) {
+            int weighted = jdbc.update("""
+                    update products p
+                    join categories c on c.category_id = p.category_id
+                    left join categories d on d.category_id = c.parent_category_id
+                    set p.weight_kg = case
+                        when lower(p.product_name) like '%kettlebell%' then 12.50
+                        when lower(p.product_name) like '%bicycle%' or lower(p.product_name) like '%bike%' then 14.00
+                        when lower(coalesce(d.category_name, c.category_name)) like '%electronic%' then 0.80
+                        when lower(coalesce(d.category_name, c.category_name)) like '%home%' then 1.50
+                        when lower(coalesce(d.category_name, c.category_name)) like '%sport%' then 1.50
+                        when lower(coalesce(d.category_name, c.category_name)) like '%beauty%' then 0.30
+                        when lower(coalesce(d.category_name, c.category_name)) like '%book%' then 0.40
+                        else 0.50 end
+                    """);
+            log.info("Schema patch: set shipping weights on {} product(s)", weighted);
+        }
+        int shipments = jdbc.update("""
+                insert into shipping (order_id, courier_service, tracking_number, shipping_status, shipping_cost,
+                                      shipping_method, weight_kg, estimated_delivery, shipped_at, delivered_at,
+                                      created_at, updated_at)
+                select o.order_id,
+                       (select i.courier_name from order_items i where i.order_id = o.order_id and i.tracking_number is not null
+                        order by i.order_item_id limit 1),
+                       (select i.tracking_number from order_items i where i.order_id = o.order_id and i.tracking_number is not null
+                        order by i.order_item_id limit 1),
+                       case o.status when 'SHIPPED' then 'SHIPPED' when 'OUT_FOR_DELIVERY' then 'OUT_FOR_DELIVERY'
+                                     when 'DELIVERED' then 'DELIVERED' when 'RETURN_REQUESTED' then 'DELIVERED'
+                                     when 'CANCELLED' then 'CANCELLED' when 'RETURNED' then 'RETURNED'
+                                     when 'REFUNDED' then 'RETURNED' else 'PENDING' end,
+                       o.shipping_fee, 'STANDARD',
+                       coalesce((select sum(i.quantity * p.weight_kg) from order_items i join products p on p.product_id = i.product_id
+                                 where i.order_id = o.order_id), 0),
+                       date(o.created_at + interval 6 day),
+                       (select min(i.shipped_at) from order_items i where i.order_id = o.order_id),
+                       o.delivered_at, o.created_at, o.updated_at
+                from orders o
+                where not exists (select 1 from shipping s where s.order_id = o.order_id)
+                """);
+        int zoned = 0;
+        for (var row : jdbc.queryForList("""
+                select s.shipping_id, o.city, o.state, o.pincode from shipping s
+                join orders o on o.order_id = s.order_id where s.delivery_zone is null
+                """)) {
+            zoned += jdbc.update("update shipping set delivery_zone = ? where shipping_id = ?",
+                    com.example.ecommerce.services.ShippingCalculator.zoneFor((String) row.get("city"),
+                            (String) row.get("state"), (String) row.get("pincode")).name(), row.get("shipping_id"));
+        }
+        if (shipments + zoned > 0) {
+            log.info("Schema patch: created {} shipping record(s), set {} delivery zone(s)", shipments, zoned);
+        }
     }
 
     private void addGeneratedColumn(String table, String column, String definition) {

@@ -477,3 +477,14 @@
 .ss-faq p {
   padding-bottom: 1.1rem;
 }
+
+/* Review moderation status shown to the reviewer (product page sidebar) */
+.ss-review-status {
+  border-radius: 10px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--ss-line-strong);
+  background: var(--ss-ivory);
+}
+.ss-review-status-pending { border-left-color: var(--ss-warning); background: var(--ss-warning-soft); }
+.ss-review-status-approved { border-left-color: var(--ss-success); background: var(--ss-success-soft); }
+.ss-review-status-rejected { border-left-color: var(--ss-danger); background: var(--ss-danger-soft); }

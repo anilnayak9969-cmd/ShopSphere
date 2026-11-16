@@ -25,6 +25,7 @@ const EMPTY = {
   stockQuantity: '',
   imageUrl: '',
   categoryId: '',
+  weightKg: '0.5',
 }
 
 function validate(form, isEdit) {
@@ -45,6 +46,8 @@ function validate(form, isEdit) {
     e.stockQuantity = 'Enter a whole number from 0 to 100000'
   }
   if (!form.categoryId) e.categoryId = 'Choose a category'
+  const weight = Number(form.weightKg)
+  if (form.weightKg === '' || Number.isNaN(weight) || weight < 0.05 || weight > 50) e.weightKg = 'Weight must be 0.05-50 kg'
   if (form.imageUrl.trim() && !IMAGE_URL_RE.test(form.imageUrl.trim())) e.imageUrl = 'Upload an image or enter a link starting with http(s)://'
   return e
 }
@@ -90,6 +93,7 @@ export default function AdminProductForm() {
             stockQuantity: String(second.stockQuantity),
             imageUrl: second.imageUrl || '',
             categoryId: String(second.categoryId),
+            weightKg: String(second.weightKg ?? '0.5'),
           })
         } else {
           setSellers((second.content || []).filter((s) => s.active))
@@ -130,6 +134,7 @@ export default function AdminProductForm() {
       stockQuantity: Number(form.stockQuantity),
       imageUrl: form.imageUrl.trim() || null,
       categoryId: Number(form.categoryId),
+      weightKg: Number(form.weightKg),
       // The admin form keeps the seller's gallery photos and specifications as they are.
       galleryImageUrls: original?.galleryImages || [],
       specifications: original?.specifications || [],
@@ -254,6 +259,9 @@ export default function AdminProductForm() {
               </div>
               <div className="col-md-6">
                 <Field id="brand" label="Brand (optional)" value={form.brand} onChange={set('brand')} error={errors.brand} maxLength={80} />
+              </div>
+              <div className="col-md-6">
+                <Field id="weightKg" type="number" min="0.05" max="50" step="0.05" label="Packed weight (kg)" value={form.weightKg} onChange={set('weightKg')} error={errors.weightKg} hint="Used to work out the shipping cost" />
               </div>
             </div>
           </fieldset>

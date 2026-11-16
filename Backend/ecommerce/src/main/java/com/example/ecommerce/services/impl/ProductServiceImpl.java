@@ -364,6 +364,9 @@ public class ProductServiceImpl implements ProductService {
         product.setBrand(blankToNull(request.brand()));
         product.applyPricing(request.price(), request.discountPercent());
         product.setStockQuantity(request.stockQuantity());
+        if (request.weightKg() != null) {
+            product.setWeightKg(request.weightKg().setScale(2, java.math.RoundingMode.HALF_UP));
+        }
         product.setImageUrl(blankToNull(request.imageUrl()));
         product.setCategory(category);
         product.replaceGallery(cleanGallery(request));

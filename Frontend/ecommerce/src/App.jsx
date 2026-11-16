@@ -31,6 +31,7 @@ import ProductDetails from './pages/ProductDetails'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import OrderConfirmation from './pages/OrderConfirmation'
+import TrackShipment from './pages/TrackShipment'
 import Help from './pages/Help'
 import NotFound from './pages/NotFound'
 import About from './pages/info/About'
@@ -74,6 +75,7 @@ const AdminReviews = lazy(() => import('./pages/admin/AdminReviews'))
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'))
 const AdminCustomers = lazy(() => import('./pages/admin/AdminCustomers'))
 const AdminCarts = lazy(() => import('./pages/admin/AdminCarts'))
+const AdminShipping = lazy(() => import('./pages/admin/AdminShipping'))
 const AdminPayments = lazy(() => import('./pages/admin/AdminPayments'))
 const AdminReturns = lazy(() => import('./pages/admin/AdminReturns'))
 const AdminReports = lazy(() => import('./pages/admin/AdminReports'))
@@ -132,6 +134,7 @@ function App() {
                       <Route path="checkout" element={<Checkout />} />
                       <Route path="order-confirmation/:id" element={<OrderConfirmation />} />
                       <Route path="account/orders/:id" element={<OrderDetails />} />
+                      <Route path="track" element={<TrackShipment />} />
                     </Route>
 
                     <Route path="*" element={<NotFound />} />
@@ -186,6 +189,7 @@ function App() {
                     <Route path="users" element={<AdminUsers />} />
                     <Route path="customers" element={<AdminCustomers />} />
                     <Route path="carts" element={<AdminCarts />} />
+                    <Route path="shipping" element={<AdminShipping />} />
                     <Route path="delivery-partners" element={<AdminDeliveryPartners />} />
                     <Route path="categories" element={<AdminCategories />} />
                     <Route path="sellers" element={<AdminSellers />} />

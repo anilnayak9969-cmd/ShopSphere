@@ -298,6 +298,22 @@ export default function OrderDetails() {
               <br />
               {order.shippingPhone}
             </div>
+            {order.shipment && (
+              <div className="small mt-2 pt-2 border-top">
+                <div>
+                  <strong>{order.shipment.method === 'EXPRESS' ? 'Express' : 'Standard'} delivery</strong> · {labelize(order.shipment.status)}
+                </div>
+                {order.shipment.estimatedDelivery && !['DELIVERED', 'CANCELLED', 'RETURNED'].includes(order.shipment.status) && (
+                  <div className="text-muted">Estimated delivery {formatDate(order.shipment.estimatedDelivery)}</div>
+                )}
+                {order.shipment.trackingNumber && (
+                  <Link to={`/track?number=${encodeURIComponent(order.shipment.trackingNumber)}`} className="d-inline-block mt-1">
+                    <i className="bi bi-truck me-1" aria-hidden="true" />
+                    Track {order.shipment.trackingNumber}
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
           <div className="ss-card ss-card-pad">
             <h2 className="h6">Payment</h2>

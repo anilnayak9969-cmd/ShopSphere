@@ -43,7 +43,20 @@ public record OrderResponse(
         LocalDateTime createdAt,
         LocalDateTime paidAt,
         LocalDateTime deliveredAt,
-        List<OrderItemResponse> items) {
+        List<OrderItemResponse> items,
+        /* Shipping Management: method, status, estimated delivery, courier and tracking number. */
+        ShipmentInfo shipment) {
+
+    public record ShipmentInfo(com.example.ecommerce.enums.ShippingMethod method,
+                               com.example.ecommerce.enums.ShippingStatus status,
+                               com.example.ecommerce.enums.DeliveryZone zone, BigDecimal weightKg,
+                               java.time.LocalDate estimatedDelivery, String courierService, String trackingNumber) {
+
+        static ShipmentInfo of(com.example.ecommerce.entites.Shipment s) {
+            return s == null ? null : new ShipmentInfo(s.getShippingMethod(), s.getShippingStatus(), s.getDeliveryZone(),
+                    s.getWeightKg(), s.getEstimatedDelivery(), s.getCourierService(), s.getTrackingNumber());
+        }
+    }
 
     /** Payment details that live on the Payment row rather than on the order. */
     public record PaymentInfo(PaymentStatus status, BigDecimal refundedAmount) {
@@ -72,6 +85,6 @@ public record OrderResponse(
                 o.getShippingName(), o.getShippingPhone(),
                 o.getAddressLine1(), o.getAddressLine2(), o.getCity(), o.getState(), o.getPincode(),
                 o.getItems().stream().mapToInt(i -> i.getQuantity()).sum(), o.getCreatedAt(), o.getPaidAt(),
-                o.getDeliveredAt(), items);
+                o.getDeliveredAt(), items, ShipmentInfo.of(o.getShipment()));
     }
 }

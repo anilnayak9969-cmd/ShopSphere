@@ -26,6 +26,7 @@ const EMPTY = {
   categoryId: '',
   galleryImageUrls: [],
   specifications: [],
+  weightKg: '0.5',
 }
 
 function validate(form) {
@@ -44,6 +45,8 @@ function validate(form) {
   }
   if (form.imageUrl.trim() && !IMAGE_URL_RE.test(form.imageUrl.trim())) e.imageUrl = 'Upload an image or enter a link starting with http(s)://'
   if (!form.categoryId) e.categoryId = 'Choose a category'
+  const weight = Number(form.weightKg)
+  if (form.weightKg === '' || Number.isNaN(weight) || weight < 0.05 || weight > 50) e.weightKg = 'Weight must be 0.05-50 kg'
   const badGallery = form.galleryImageUrls.findIndex((u) => u.trim() && !IMAGE_URL_RE.test(u.trim()))
   if (badGallery >= 0) e.galleryImageUrls = `Photo ${badGallery + 1}: upload an image or enter a link starting with http(s)://`
   const badSpec = form.specifications.findIndex((s) => (s.name.trim() || s.value.trim()) && (!s.name.trim() || !s.value.trim()))
@@ -92,6 +95,7 @@ export default function SellerProductForm() {
             categoryId: String(product.categoryId),
             galleryImageUrls: product.galleryImages || [],
             specifications: (product.specifications || []).map((s) => ({ name: s.name, value: s.value })),
+            weightKg: String(product.weightKg ?? '0.5'),
           })
         }
       })
@@ -139,6 +143,7 @@ export default function SellerProductForm() {
       specifications: form.specifications
         .map((s) => ({ name: s.name.trim(), value: s.value.trim() }))
         .filter((s) => s.name && s.value),
+      weightKg: Number(form.weightKg),
     }
     setSaving(true)
     try {
@@ -243,6 +248,9 @@ export default function SellerProductForm() {
               </div>
               <div className="col-md-6">
                 <Field id="discountPercent" type="number" min="0" max="90" label="Discount (%)" value={form.discountPercent} onChange={set('discountPercent')} error={errors.discountPercent} />
+              </div>
+              <div className="col-md-6">
+                <Field id="weightKg" type="number" min="0.05" max="50" step="0.05" label="Packed weight (kg)" value={form.weightKg} onChange={set('weightKg')} error={errors.weightKg} hint="Used to work out the shipping cost" />
               </div>
             </div>
           </fieldset>

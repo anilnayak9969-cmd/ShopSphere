@@ -93,6 +93,10 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     @EntityGraph(attributePaths = {"order", "order.customer", "product", "seller"})
     Optional<OrderItem> findWithOrderByOrderItemId(Long orderItemId);
 
+    /** Shipping Management: an order item's own tracking number (items can travel separately). */
+    @EntityGraph(attributePaths = {"order", "order.customer"})
+    Optional<OrderItem> findFirstByTrackingNumberIgnoreCase(String trackingNumber);
+
     /** Row is [unitsSold, revenue] over items in the given statuses. */
     @Query("""
             select coalesce(sum(oi.quantity), 0), coalesce(sum(oi.lineTotal), 0)

@@ -79,7 +79,7 @@ export default function ProductReviews({ productId, onChanged }) {
         title: form.title.trim() || null,
         comment: form.comment.trim() || null,
       })
-      toast.success('Thank you — your review is published.')
+      toast.success('Thank you — your review was sent for approval and will appear once a moderator approves it.')
       setFormOpen(false)
       await Promise.all([loadFirstPage(), loadEligibility()])
       onChanged?.()
@@ -160,6 +160,32 @@ export default function ProductReviews({ productId, onChanged }) {
                 <Link to="/login" state={{ from: location }}>Sign in</Link> to review products you have bought.
               </p>
             )}
+            {isCustomer && existing && (
+              <div className={`small mb-3 ss-review-status ss-review-status-${existing.status.toLowerCase()}`} role="status">
+                <div className="d-flex align-items-center gap-2">
+                  <span className="fw-semibold">Your review</span>
+                  <Stars value={existing.rating} showValue={false} />
+                </div>
+                {existing.status === 'PENDING' && (
+                  <div className="text-muted mt-1">
+                    <i className="bi bi-hourglass-split me-1" aria-hidden="true" />
+                    Awaiting approval — it appears here once a moderator approves it.
+                  </div>
+                )}
+                {existing.status === 'APPROVED' && (
+                  <div className="text-success mt-1">
+                    <i className="bi bi-check2-circle me-1" aria-hidden="true" />
+                    Published{existing.moderatedAt ? ` on ${formatDate(existing.moderatedAt)}` : ''}.
+                  </div>
+                )}
+                {existing.status === 'REJECTED' && (
+                  <div className="text-danger mt-1">
+                    <i className="bi bi-x-circle me-1" aria-hidden="true" />
+                    Not published: {existing.rejectionReason}. Edit it to submit again.
+                  </div>
+                )}
+              </div>
+            )}
             {isCustomer && eligibility?.canReview && !formOpen && (
               <button type="button" className="btn btn-ink w-100" onClick={openForm}>
                 <i className={`bi ${existing ? 'bi-pencil' : 'bi-star'} me-2`} />
@@ -202,11 +228,13 @@ export default function ProductReviews({ productId, onChanged }) {
                 value={form.comment}
                 onChange={(e) => setForm((f) => ({ ...f, comment: e.target.value }))}
               />
-              <div className="form-text">{form.comment.length}/2000</div>
+              <div className="form-text">
+                {form.comment.length}/2000 · Reviews are checked by a moderator before they appear{existing ? '; an edited review is checked again' : ''}.
+              </div>
               <div className="d-flex gap-2 mt-3 flex-wrap">
                 <button type="submit" className="btn btn-ink" disabled={saving}>
                   {saving && <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />}
-                  Publish review
+                  Submit review
                 </button>
                 <button type="button" className="btn btn-ghost" onClick={() => setFormOpen(false)} disabled={saving}>
                   Cancel

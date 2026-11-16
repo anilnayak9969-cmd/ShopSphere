@@ -828,3 +828,201 @@ WHERE user_id = (SELECT user_id FROM (SELECT user_id FROM users WHERE email = 'd
 -- 12.5 Most wished-for products
 SELECT p.product_name, COUNT(*) AS saved_by FROM wishlist_items w JOIN products p ON p.product_id = w.product_id
 GROUP BY p.product_id ORDER BY saved_by DESC LIMIT 5;
+-- =====================================================================
+-- 13. SHIPPING MANAGEMENT MODULE (assignment)
+--    Assignment "shipping" -> ShopSphere shipping (same table name):
+--    shipping_id, order_id (UNIQUE, one shipment per order), courier_service, tracking_number,
+--    shipping_status, shipping_cost, created_at, updated_at
+--    + shipping_method (STANDARD/EXPRESS), delivery_zone (METRO/NATIONAL/REMOTE), weight_kg,
+--      estimated_delivery, shipped_at, delivered_at.
+--    products.weight_kg holds each product's packed weight (used for the cost).
+-- =====================================================================
+
+-- 13.1 Table (created by Hibernate; shown here for reference)
+-- CREATE TABLE shipping (
+--   shipping_id        BIGINT AUTO_INCREMENT PRIMARY KEY,
+--   order_id           BIGINT NOT NULL UNIQUE,
+--   courier_service    VARCHAR(100),
+--   tracking_number    VARCHAR(100),
+--   shipping_status    ENUM('PENDING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED','CANCELLED','RETURNED') NOT NULL,
+--   shipping_cost      DECIMAL(12,2) NOT NULL,
+--   shipping_method    ENUM('STANDARD','EXPRESS') NOT NULL,
+--   delivery_zone      ENUM('METRO','NATIONAL','REMOTE'),
+--   weight_kg          DECIMAL(8,2) NOT NULL,
+--   estimated_delivery DATE,
+--   shipped_at         DATETIME(6),
+--   delivered_at       DATETIME(6),
+--   created_at         DATETIME(6) NOT NULL,
+--   updated_at         DATETIME(6) NOT NULL,
+--   INDEX idx_shipping_tracking (tracking_number),
+--   FOREIGN KEY (order_id) REFERENCES orders(order_id)
+-- );
+
+-- 13.2 Shipping cost calculation (weight x location x method) for a cart, in SQL.
+--      Base fee from platform_settings (Rs 49); +Rs 20 national, +Rs 50 remote;
+--      +Rs 15 per started 0.5 kg above 0.5 kg. Standard is free over the threshold (Rs 499)
+--      except Rs 15 per 0.5 kg above 2 kg. Express = 2 x (zone + weight charge), minimum Rs 99.
+SELECT q.weight_kg, q.order_value, q.zone,
+       CASE WHEN q.order_value >= q.threshold
+            THEN 15 * GREATEST(CEIL((q.weight_kg - 2) / 0.5), 0)
+            ELSE q.zone_fee + 15 * GREATEST(CEIL((q.weight_kg - 0.5) / 0.5), 0) END AS standard_cost,
+       GREATEST(2 * (q.zone_fee + 15 * GREATEST(CEIL((q.weight_kg - 0.5) / 0.5), 0)), 99) AS express_cost
+FROM (SELECT SUM(p.weight_kg * ci.quantity) AS weight_kg, SUM(ci.line_total) AS order_value,
+             'NATIONAL' AS zone, s.free_shipping_threshold AS threshold,
+             s.shipping_fee + 20 AS zone_fee                       -- NATIONAL zone (METRO +0, REMOTE +50)
+      FROM cart_items ci
+      JOIN carts c    ON c.cart_id = ci.cart_id
+      JOIN users u    ON u.user_id = c.user_id
+      JOIN products p ON p.product_id = ci.product_id
+      CROSS JOIN platform_settings s
+      WHERE u.email = 'demo.customer@shopsphere.local'
+      GROUP BY s.free_shipping_threshold, s.shipping_fee) q;
+
+-- 13.3 Shipping dashboard: every placed order's shipment with courier, tracking and status
+SELECT o.order_number, CONCAT(u.first_name, ' ', u.last_name) AS customer,
+       CONCAT(o.city, ' ', o.pincode) AS deliver_to, s.delivery_zone, s.shipping_method,
+       s.weight_kg, s.shipping_cost, COALESCE(s.courier_service, '-') AS courier,
+       COALESCE(s.tracking_number, '-') AS tracking, s.shipping_status, s.estimated_delivery
+FROM shipping s
+JOIN orders o ON o.order_id = s.order_id
+JOIN users u  ON u.user_id = o.customer_id
+WHERE o.status <> 'PENDING_PAYMENT'
+ORDER BY o.created_at DESC;
+
+-- 13.4 Dashboard cards: shipments per status, shipping charged, express orders
+SELECT s.shipping_status, COUNT(*) AS shipments FROM shipping s JOIN orders o ON o.order_id = s.order_id
+WHERE o.status <> 'PENDING_PAYMENT' GROUP BY s.shipping_status;
+SELECT SUM(s.shipping_cost) AS shipping_charged, SUM(s.shipping_method = 'EXPRESS') AS express_orders
+FROM shipping s JOIN orders o ON o.order_id = s.order_id
+WHERE o.status NOT IN ('PENDING_PAYMENT', 'CANCELLED');
+
+-- 13.5 Track shipment by tracking number (only the customer's own orders)
+SELECT s.tracking_number, s.courier_service, s.shipping_status, s.estimated_delivery,
+       o.order_number, o.city, o.pincode
+FROM shipping s JOIN orders o ON o.order_id = s.order_id
+WHERE UPPER(s.tracking_number) = UPPER('ssd-15')
+  AND o.customer_id = (SELECT user_id FROM users WHERE email = 'demo.customer@shopsphere.local');
+
+-- 13.6 Tracking history of that shipment (oldest first)
+SELECT e.created_at, e.status, e.description, oi.product_name
+FROM order_item_events e
+JOIN order_items oi ON oi.order_item_id = e.order_item_id
+JOIN shipping s     ON s.order_id = oi.order_id
+WHERE UPPER(s.tracking_number) = UPPER('SSD-15')
+ORDER BY e.created_at, e.event_id;
+
+-- 13.7 Update shipping information once the order is shipped (admin), in one transaction.
+--      The app also refuses a tracking number used by another order and backwards status moves.
+START TRANSACTION;
+UPDATE shipping s JOIN orders o ON o.order_id = s.order_id
+SET s.courier_service = 'Delhivery', s.tracking_number = 'DLV5550001',
+    s.shipping_status = 'IN_TRANSIT', s.updated_at = NOW(6)
+WHERE o.order_number = 'SS261116-ZAD6GJ'
+  AND s.shipping_status IN ('SHIPPED', 'IN_TRANSIT')
+  AND NOT EXISTS (SELECT 1 FROM (SELECT order_id FROM shipping WHERE tracking_number = 'DLV5550001') t
+                  WHERE t.order_id <> s.order_id);
+UPDATE order_items oi JOIN orders o ON o.order_id = oi.order_id
+SET oi.courier_name = 'Delhivery', oi.tracking_number = 'DLV5550001'
+WHERE o.order_number = 'SS261116-ZAD6GJ' AND oi.item_status = 'SHIPPED';
+ROLLBACK;  -- demo only: use COMMIT to keep the change
+
+-- 13.8 Late shipments: still on the way after the estimated delivery date
+SELECT o.order_number, s.courier_service, s.tracking_number, s.shipping_status, s.estimated_delivery,
+       DATEDIFF(CURDATE(), s.estimated_delivery) AS days_late
+FROM shipping s JOIN orders o ON o.order_id = s.order_id
+WHERE s.shipping_status IN ('SHIPPED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY') AND s.estimated_delivery < CURDATE()
+ORDER BY days_late DESC;
+
+-- =====================================================================
+-- 14. REVIEW AND RATING MANAGEMENT MODULE (assignment)
+--    Assignment "reviews" -> ShopSphere reviews (same table name):
+--    review_id, product_id, customer_id -> user_id, rating (1-5), review_text -> comment (+ title),
+--    created_at, updated_at, status (BIT: 1 approved, 0 unapproved)
+--    + moderation_status (PENDING / APPROVED / REJECTED), rejection_reason, moderated_at.
+--    (product_id, user_id) is UNIQUE: one review per customer per product.
+--    products.rating_average / rating_count hold the approved reviews' average and count.
+-- =====================================================================
+
+-- 14.1 Table (created by Hibernate; shown here for reference)
+-- CREATE TABLE reviews (
+--   review_id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+--   product_id        BIGINT NOT NULL,
+--   user_id           BIGINT NOT NULL,
+--   rating            INT NOT NULL,                 -- 1-5, checked by the API
+--   title             VARCHAR(120),
+--   comment           VARCHAR(2000),                -- review_text
+--   status            BIT(1),                       -- 1 = approved, 0 = unapproved
+--   moderation_status ENUM('PENDING','APPROVED','REJECTED'),
+--   rejection_reason  VARCHAR(255),
+--   moderated_at      DATETIME(6),
+--   created_at        DATETIME(6) NOT NULL,
+--   updated_at        DATETIME(6) NOT NULL,
+--   UNIQUE KEY uk_reviews_product_user (product_id, user_id),
+--   FOREIGN KEY (product_id) REFERENCES products(product_id),
+--   FOREIGN KEY (user_id) REFERENCES users(user_id)
+-- );
+
+-- 14.2 Products a customer may review: delivered to them and not reviewed yet
+SELECT DISTINCT oi.product_id, oi.product_name
+FROM order_items oi JOIN orders o ON o.order_id = oi.order_id
+WHERE o.customer_id = (SELECT user_id FROM users WHERE email = 'demo.customer@shopsphere.local')
+  AND oi.item_status IN ('DELIVERED', 'RETURN_REQUESTED', 'RETURNED')
+  AND NOT EXISTS (SELECT 1 FROM reviews r WHERE r.product_id = oi.product_id AND r.user_id = o.customer_id);
+
+-- 14.3 View product reviews (product page): approved only, newest first, first name only
+SELECT r.rating, r.title, r.comment, SUBSTRING_INDEX(u.full_name, ' ', 1) AS reviewer, r.created_at
+FROM reviews r JOIN users u ON u.user_id = r.user_id
+WHERE r.product_id = 70 AND r.moderation_status = 'APPROVED'
+ORDER BY r.created_at DESC;
+
+-- 14.4 Rating summary and 5..1 star breakdown (approved reviews)
+SELECT ROUND(COALESCE(AVG(rating), 0), 2) AS average, COUNT(*) AS reviews
+FROM reviews WHERE product_id = 70 AND moderation_status = 'APPROVED';
+SELECT rating AS stars, COUNT(*) AS reviews FROM reviews
+WHERE product_id = 70 AND moderation_status = 'APPROVED' GROUP BY rating ORDER BY rating DESC;
+
+-- 14.5 Moderation queue (admin): pending first, with the customer
+SELECT r.review_id, p.product_name, r.rating, r.title, r.comment, u.full_name AS customer, u.email,
+       r.moderation_status, r.status + 0 AS approved, r.rejection_reason, r.updated_at
+FROM reviews r JOIN users u ON u.user_id = r.user_id JOIN products p ON p.product_id = r.product_id
+ORDER BY r.moderation_status = 'PENDING' DESC, r.updated_at DESC;
+
+-- 14.6 Moderation cards
+SELECT moderation_status, COUNT(*) AS reviews FROM reviews GROUP BY moderation_status;
+SELECT ROUND(COALESCE(AVG(rating), 0), 2) AS average_rating FROM reviews WHERE moderation_status = 'APPROVED';
+
+-- 14.7 Add, approve, reject, update and delete — in one transaction, rolled back (demo only).
+--      The app also refuses customers whose item was not delivered and ratings outside 1-5.
+START TRANSACTION;
+-- Add (or update): a new or edited review waits for approval
+INSERT INTO reviews (product_id, user_id, rating, title, comment, moderation_status, status, created_at, updated_at)
+SELECT 31, user_id, 4, 'Lovely dress', 'Fits well after hemming.', 'PENDING', b'0', NOW(6), NOW(6)
+FROM users WHERE email = 'demo.customer@shopsphere.local'
+ON DUPLICATE KEY UPDATE rating = VALUES(rating), title = VALUES(title), comment = VALUES(comment),
+                        moderation_status = 'PENDING', status = b'0', rejection_reason = NULL,
+                        moderated_at = NULL, updated_at = NOW(6);
+-- Approve
+UPDATE reviews SET moderation_status = 'APPROVED', status = b'1', rejection_reason = NULL,
+                   moderated_at = NOW(6), updated_at = NOW(6)
+WHERE product_id = 31 AND moderation_status = 'PENDING';
+-- Keep the product's stored rating in step (approved reviews only)
+UPDATE products p SET
+  p.rating_average = (SELECT ROUND(COALESCE(AVG(r.rating), 0), 2) FROM reviews r
+                      WHERE r.product_id = p.product_id AND r.moderation_status = 'APPROVED'),
+  p.rating_count   = (SELECT COUNT(*) FROM reviews r
+                      WHERE r.product_id = p.product_id AND r.moderation_status = 'APPROVED')
+WHERE p.product_id = 31;
+SELECT product_id, rating_average, rating_count FROM products WHERE product_id = 31;
+-- Reject with a reason
+UPDATE reviews SET moderation_status = 'REJECTED', status = b'0',
+                   rejection_reason = 'Not about the product', moderated_at = NOW(6), updated_at = NOW(6)
+WHERE product_id = 31;
+-- Delete (customer: own review; admin: inappropriate review)
+DELETE FROM reviews WHERE product_id = 31
+  AND user_id = (SELECT user_id FROM (SELECT user_id FROM users WHERE email = 'demo.customer@shopsphere.local') u);
+ROLLBACK;  -- demo only: use COMMIT to keep the changes
+
+-- 14.8 Best-rated products (at least one approved review)
+SELECT p.product_name, p.rating_average, p.rating_count
+FROM products p WHERE p.rating_count > 0
+ORDER BY p.rating_average DESC, p.rating_count DESC LIMIT 5;

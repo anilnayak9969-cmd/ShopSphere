@@ -34,7 +34,9 @@ public record ProductResponse(
         Long sellerId,
         String storeName,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt) {
+        LocalDateTime updatedAt,
+        /* Shipping Management: packed weight in kg. */
+        BigDecimal weightKg) {
 
     /** For lists: gallery and specifications are left empty so a page of products needs no extra queries. */
     public static ProductResponse from(Product p) {
@@ -53,6 +55,6 @@ public record ProductResponse(
                 p.getStockQuantity() > 0, p.getImageUrl(), gallery, specs, p.getRatingAverage(), p.getRatingCount(),
                 p.getSoldCount(), p.isActive(), p.getApprovalStatus(), p.getRejectionReason(),
                 p.getCategory().getCategoryId(), p.getCategory().getCategoryName(), p.getCategory().isStatus(),
-                p.getSeller().getId(), p.getSeller().getStoreName(), p.getCreatedAt(), p.getUpdatedAt());
+                p.getSeller().getId(), p.getSeller().getStoreName(), p.getCreatedAt(), p.getUpdatedAt(), p.getWeightKg());
     }
 }

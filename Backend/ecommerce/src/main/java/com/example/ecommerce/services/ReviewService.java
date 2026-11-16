@@ -2,6 +2,8 @@ package com.example.ecommerce.services;
 
 import com.example.ecommerce.dtos.common.PageResponse;
 import com.example.ecommerce.dtos.review.ReviewEligibility;
+import com.example.ecommerce.dtos.review.ReviewModerationDtos.ModerationSummary;
+import com.example.ecommerce.enums.ReviewStatus;
 import com.example.ecommerce.dtos.review.ReviewRequest;
 import com.example.ecommerce.dtos.review.ReviewResponse;
 import com.example.ecommerce.dtos.review.ReviewSummary;
@@ -21,7 +23,16 @@ public interface ReviewService {
 
     PageResponse<ReviewResponse> customerReviews(Long userId, int page, int size);
 
-    PageResponse<ReviewResponse> adminReviews(Integer rating, int page, int size);
+    /** Moderation queue: pending first; filter by status, stars and a search text. */
+    PageResponse<ReviewResponse> adminReviews(ReviewStatus status, Integer rating, String search, int page, int size);
+
+    ModerationSummary moderationSummary();
+
+    /** Publishes the review: it appears on the product page and counts towards the rating. */
+    ReviewResponse approve(Long reviewId);
+
+    /** Hides the review with a reason the customer can read; they can edit and resubmit it. */
+    ReviewResponse reject(Long reviewId, String reason);
 
     void adminDelete(Long reviewId);
 }

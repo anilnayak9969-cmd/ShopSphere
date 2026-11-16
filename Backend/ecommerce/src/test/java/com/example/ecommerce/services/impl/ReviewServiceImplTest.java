@@ -38,6 +38,7 @@ class ReviewServiceImplTest {
     @Mock private ProductRepository productRepository;
     @Mock private OrderItemRepository orderItemRepository;
     @Mock private UserRepository userRepository;
+    @Mock private com.example.ecommerce.services.NotificationService notificationService;
 
     @InjectMocks
     private ReviewServiceImpl reviewService;
@@ -81,6 +82,8 @@ class ReviewServiceImplTest {
         assertThat(response.title()).isEqualTo("Comfortable");
         assertThat(response.comment()).isNull();
         assertThat(response.reviewerName()).isEqualTo("Riya");
+        assertThat(response.status()).isEqualTo(com.example.ecommerce.enums.ReviewStatus.PENDING);
+        assertThat(response.customerEmail()).isNull(); // never exposed outside the admin queue
         assertThat(product.getRatingAverage()).isEqualByComparingTo(new BigDecimal("4.50"));
         assertThat(product.getRatingCount()).isEqualTo(2);
     }

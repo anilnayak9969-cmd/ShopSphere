@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ShopSphere — Shipping Management Module</title>
+<style>
+  @page { size: A4; margin: 18mm 17mm 20mm 17mm; }
+  :root { --navy: #14213d; --blue: #2563eb; --ink: #1f2937; --muted: #6b7280; --line: #cfd6e0; --head: #eef1f5; --warn: #fff7e6; --warn-line: #f59e0b; --ok: #e8f6ee; --ok-ink: #137a3e; }
+  * { box-sizing: border-box; }
+  body { font-family: Calibri, "Segoe UI", Arial, sans-serif; color: var(--ink); font-size: 10.6pt; line-height: 1.42; margin: 0; }
+  h1 { font-size: 23pt; color: var(--navy); margin: 0 0 2pt; letter-spacing: -0.2pt; }
+  .subtitle { font-size: 14pt; color: var(--muted); margin: 0 0 4pt; }
+  .byline { color: var(--muted); margin-bottom: 14pt; }
+  h2 { font-size: 15.5pt; color: var(--navy); margin: 18pt 0 6pt; page-break-after: avoid; }
+  h3 { font-size: 12.3pt; color: var(--blue); margin: 14pt 0 5pt; page-break-after: avoid; }
+  p { margin: 0 0 7pt; }
+  ul, ol { margin: 0 0 8pt; padding-left: 20pt; }
+  li { margin-bottom: 2.5pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 10pt; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  th, td { border: 1px solid var(--line); padding: 5pt 7pt; text-align: left; vertical-align: top; }
+  th { background: var(--head); font-weight: 700; }
+  code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 9.2pt; }
+  pre { background: #f2f4f7; padding: 7pt 9pt; font-family: Consolas, monospace; font-size: 8.5pt; line-height: 1.35; white-space: pre-wrap; margin: 4pt 0 10pt; }
+  pre .c { color: #6b7280; }
+  .note { background: var(--warn); border-left: 4pt solid var(--warn-line); padding: 6pt 9pt; margin: 6pt 0 10pt; }
+  .done { background: var(--ok); color: var(--ok-ink); font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; white-space: nowrap; font-size: 9.5pt; }
+  .new { background: #e8f0fe; color: #1d4ed8; font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; white-space: nowrap; font-size: 8.5pt; }
+  figure { margin: 8pt 0 12pt; text-align: center; page-break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid var(--line); }
+  figcaption { font-style: italic; color: #4b5563; font-size: 9.6pt; margin-top: 4pt; }
+  .page-break { page-break-before: always; }
+  .small { font-size: 9.5pt; color: var(--muted); }
+  a { color: var(--blue); }
+</style>
+</head>
+<body>
+<h1>ShopSphere — Shipping Management Module</h1>
+<div class="subtitle">Assignment submission and end user documentation</div>
+<div class="byline">Anil Nayak · 16 November 2026</div>
+
+<h2>Submission details</h2>
+<table>
+  <tr><th style="width:32%">Item</th><th>Details</th></tr>
+  <tr><td>Candidate</td><td>Anil Nayak</td></tr>
+  <tr><td>Internship</td><td>ITVedant / Vibgyor Advisors integrated internship</td></tr>
+  <tr><td>Project / Module</td><td>ShopSphere — Shipping Management (checkout, admin console, customer tracking)</td></tr>
+  <tr><td>Stack</td><td>React 19 + Vite · Java 17, Spring Boot 4, JWT · MySQL (<code>ecommerce_intern</code>, table <code>shipping</code>)</td></tr>
+</table>
+
+<h2>1. GitHub repository link</h2>
+<p><b>Repository:</b> <a href="https://github.com/anilnayak9969-cmd/ShopSphere">https://github.com/anilnayak9969-cmd/ShopSphere</a></p>
+<p>Module code: <code>ShippingCalculator</code>, <code>ShippingServiceImpl</code>, <code>ShippingController</code>, <code>Shipment</code> (table <code>shipping</code>), <code>ShipmentRepository</code>, <code>ShippingDtos</code>, enums <code>ShippingMethod</code> / <code>DeliveryZone</code> / <code>ShippingStatus</code>; frontend <code>pages/admin/AdminShipping.jsx</code>, <code>pages/TrackShipment.jsx</code>, <code>pages/Checkout.jsx</code> (delivery method), <code>services/shippingService.js</code>; SQL in <code>DataBase/queries.sql</code> section 13; this document in <code>Docs/ShippingManagement</code>.</p>
+
+<h2>2. URL of the module hosted on a free server</h2>
+<p><b>Website:</b> <a href="https://host-shop-sphere.vercel.app/">https://host-shop-sphere.vercel.app/</a> — admin: <b>Admin console → Shipping</b>; customer: <b>Track my order</b> in the footer.</p>
+<div class="note"><b>Hosting status:</b> only the React frontend is deployed on Vercel; the backend and database are not online yet. The changes appear there after the latest code is pushed and redeployed. Screenshots were taken from the application running locally.</div>
+
+<h2>3. Requirement checklist — is the module implemented?</h2>
+<p>Before this assignment ShopSphere charged one flat delivery fee (₹49, free over ₹499) and kept a courier and tracking number on each order item, filled in by sellers or delivery partners. There was no shipping table, no cost by weight, place or speed, no shipping dashboard and no way to track a parcel by its number. Everything marked <span class="new">ADDED</span> was built for this assignment.</p>
+<table>
+  <tr><th style="width:24%">Requirement</th><th>How ShopSphere implements it</th><th style="width:14%">Status</th></tr>
+  <tr><td><b>1. Shipping cost calculation</b> by weight, delivery location and shipping method</td><td>Every product has a <b>packed weight</b> <span class="new">ADDED</span>. At checkout the delivery address decides the <b>zone</b> (metro city / rest of India / remote area) and the customer chooses <b>Standard</b> or <b>Express</b> delivery; both prices and arrival dates are shown and the chosen one is charged <span class="new">ADDED</span>. Rules in section 4.1.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>2. Shipping dashboard</b> (admin)</td><td><b>Admin console → Shipping</b> <span class="new">ADDED</span>: cards (not shipped, on the way, delivered, shipping charged), search, status filter, and a table of every order with destination and zone, method, cost, weight, courier, tracking number, status and due date.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>3. Track shipment</b> (customer)</td><td><b>Track my order</b> page <span class="new">ADDED</span>: the customer enters a tracking number and sees the courier, status, estimated delivery, progress steps, the items in the parcel and the full tracking history. Only the customer's own parcels can be tracked.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>4. Update shipping information</b> (admin)</td><td><b>Ship / Update</b> on the dashboard <span class="new">ADDED</span>: courier service, tracking number, status (Shipped → In transit → Out for delivery → Delivered, forward only) and a note. The order and its items move with it, and the customer is notified.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>Database design</b>: table <code>shipping</code></td><td>Table <code>shipping</code> with every assignment column plus method, zone, weight and dates <span class="new">ADDED</span>; one row per order, existing orders back-filled. See Appendix A.</td><td><span class="done">Implemented</span></td></tr>
+</table>
+
+<h2>4. End user documentation — Shipping Management</h2>
+
+<h3>4.1 How the shipping cost is worked out</h3>
+<p>The cost depends on three things: the <b>weight</b> of the parcel (sum of each product's packed weight × quantity), the <b>delivery location</b> (zone from the city, state and PIN code) and the <b>shipping method</b>. The base fee and free-delivery threshold come from <b>Admin → Settings</b> (₹49 and ₹499 by default).</p>
+<table>
+  <tr><th style="width:26%">Factor</th><th>Rule</th></tr>
+  <tr><td>Metro city</td><td>Base fee ₹49 (Mumbai, Delhi, Bengaluru, Chennai, Kolkata, Hyderabad, Pune, Ahmedabad and nearby)</td></tr>
+  <tr><td>Rest of India</td><td>Base fee + ₹20</td></tr>
+  <tr><td>Remote area</td><td>Base fee + ₹50 (North-East, Jammu &amp; Kashmir, Ladakh, Andaman &amp; Nicobar, Lakshadweep)</td></tr>
+  <tr><td>Weight</td><td>First 0.5 kg included; ₹15 for every started 0.5 kg above it</td></tr>
+  <tr><td>Standard delivery</td><td>Free when the order is ₹499 or more — heavy parcels still pay ₹15 per 0.5 kg above 2 kg. Metro 2–4 days, rest of India 4–6, remote 6–9.</td></tr>
+  <tr><td>Express delivery</td><td>Twice the zone + weight charge, at least ₹99, never free. Metro 1–2 days, rest of India 2–3, remote 3–5.</td></tr>
+</table>
+<p><b>Examples</b> — 0.4 kg book, ₹300 order: Standard ₹49 (metro) / ₹69 (rest of India) / ₹99 (remote); Express ₹99 / ₹138. A 12.5 kg kettlebell to Nashik: Standard ₹315, Express ₹858.</p>
+
+<h3>4.2 Choose a delivery method at checkout (customer)</h3>
+<ol>
+  <li>Add products to the cart and click <b>Checkout</b>.</li>
+  <li>Choose the delivery address and click <b>Deliver here</b>.</li>
+  <li>Under <b>Delivery method</b> the zone and parcel weight are shown with both options, their prices and arrival dates. Pick one — the price details update at once.</li>
+  <li>Continue to payment. The order keeps the chosen method, its cost and the estimated delivery date.</li>
+</ol>
+<figure><img src="screenshots/s01-checkout-delivery-method.png"><figcaption>Figure 1 — Delivery method at checkout: a 4.9 kg parcel to Pune, Standard ₹90 or Express ₹368 with arrival dates.</figcaption></figure>
+
+<h3>4.3 Shipping dashboard (admin)</h3>
+<p>Open <b>Admin console → Shipping</b>. The cards count parcels not shipped yet, on the way, and delivered, plus the total shipping charged. The table lists each order with where it goes (and its zone), method, cost and weight, courier and tracking number, and status with the due or delivered date. Search by order number, tracking number, courier, customer or city, or filter by status.</p>
+<figure><img src="screenshots/s02-admin-shipping-dashboard.png"><figcaption>Figure 2 — Shipping dashboard: a new order to Guwahati (remote zone) is waiting to be shipped.</figcaption></figure>
+
+<h3>4.4 Update shipping information (admin)</h3>
+<ol>
+  <li>Click <b>Ship</b> (order not shipped yet) or <b>Update</b> (already shipped).</li>
+  <li>Enter the <b>courier service</b> (pick from the list or type one), the <b>tracking number</b> from the courier and the new <b>status</b>. Add a note for the customer if useful.</li>
+  <li>Click <b>Save shipping details</b>. A pending order is confirmed, packed and shipped in one go (every step is recorded), each item gets the courier and tracking number, and the customer is notified with a link to track it.</li>
+</ol>
+<figure><img src="screenshots/s03-admin-ship-modal.png"><figcaption>Figure 3 — Shipping an order with Blue Dart, a tracking number and status In transit.</figcaption></figure>
+<figure><img src="screenshots/s04-admin-shipped.png"><figcaption>Figure 4 — After saving: the order shows Blue Dart, the tracking number and In transit; the cards update.</figcaption></figure>
+<figure><img src="screenshots/s05-admin-filter-in-transit.png"><figcaption>Figure 5 — Filtering the dashboard to parcels in transit.</figcaption></figure>
+
+<h3>4.5 Track a shipment (customer)</h3>
+<ol>
+  <li>Click <b>Track my order</b> in the footer, the <b>Track</b> link on an order, or the link in the shipping notification.</li>
+  <li>Enter the tracking number and click <b>Track</b>.</li>
+  <li>The page shows the courier, order, delivery method, estimated delivery, progress (Order placed → Shipped → In transit → Out for delivery → Delivered), the items in the parcel and the tracking history, newest first.</li>
+</ol>
+<figure><img src="screenshots/s06-track-shipment.png"><figcaption>Figure 6 — Tracking BD848360170: in transit with Blue Dart, due 25 Nov 2026.</figcaption></figure>
+<figure><img src="screenshots/s07-track-not-found.png"><figcaption>Figure 7 — A tracking number that is not on the customer's account.</figcaption></figure>
+<p>The order page also shows the delivery method, shipping status, estimated delivery and a <b>Track</b> link.</p>
+<figure><img src="screenshots/s08-order-details-shipment.png"><figcaption>Figure 8 — Order details: courier and tracking on each item, and the shipment summary under the address.</figcaption></figure>
+
+<h3>4.6 Product weight (admin and seller)</h3>
+<p>The product form has a <b>Packed weight (kg)</b> field (0.05–50 kg) that feeds the shipping cost.</p>
+<figure><img src="screenshots/s09-product-weight.png"><figcaption>Figure 9 — Packed weight on the product form (12.5 kg kettlebell).</figcaption></figure>
+
+<h3>4.7 Rules and messages</h3>
+<table>
+  <tr><th style="width:42%">Situation</th><th>Result</th></tr>
+  <tr><td>Invalid PIN code at checkout</td><td><i>Enter a valid 6-digit PIN code</i></td></tr>
+  <tr><td>Tracking number not 5–40 letters, numbers or -</td><td><i>Tracking number must be 5-40 letters, numbers or -</i></td></tr>
+  <tr><td>Tracking number already used by another order</td><td><i>Tracking number … is already used by another order.</i> (HTTP 409)</td></tr>
+  <tr><td>Moving a status backwards (e.g. In transit → Shipped)</td><td><i>A shipment cannot go back from In transit to Shipped.</i></td></tr>
+  <tr><td>Shipping a cancelled or returned order / an unpaid checkout</td><td>Refused — nothing to ship</td></tr>
+  <tr><td>Tracking a number that is not on the customer's account</td><td><i>No shipment with tracking number … was found on your account.</i> (HTTP 404)</td></tr>
+  <tr><td>Dashboard or update used by a customer or seller</td><td>HTTP 403 — admin only</td></tr>
+  <tr><td>Cash on delivery order marked Delivered</td><td>Payment recorded as received</td></tr>
+</table>
+
+<h2>5. Screenshots of the running application</h2>
+<p>Figures 1–9 were taken from the application running locally (React on <code>localhost:5173</code>, Spring Boot on <code>localhost:8080</code>, MySQL <code>ecommerce_intern</code>) with the demo customer Priya Sharma and the ShopSphere admin.</p>
+
+<h2>6. Testing</h2>
+<ul>
+  <li><b>Unit tests:</b> <code>ShippingCalculatorTest</code> (7) — zones, zone prices, weight steps, free standard delivery with the heavy-parcel charge, express pricing, delivery dates, base fee from settings. <code>ShippingManagementTest</code> (11) — quote, empty cart, shipping a pending order with the admin's courier, in transit, no backwards moves, duplicate tracking (409), cancelled orders, status sync, tracking by number, merged tracking history, another customer's number (404). Full backend suite: <b>125 tests, all passing</b>.</li>
+  <li><b>End-to-end checks</b> against the running app (25, all passing): quotes for metro / rest of India / remote, express order placed and charged the quoted price, shipping row created, dashboard and summary, invalid and duplicate tracking numbers, ship → in transit → delivered (cash collected), no backwards move, tracking by number, unknown number (404), notifications, and customer / seller refused (403).</li>
+</ul>
+
+<h2 class="page-break">Appendix A: database table</h2>
+<table>
+  <tr><th style="width:19%">Assignment column</th><th style="width:19%">Assignment type</th><th style="width:30%">ShopSphere column (<code>shipping</code>)</th><th>Meaning</th></tr>
+  <tr><td>shipping_id</td><td>int (pk, auto_increment)</td><td><code>shipping_id</code> BIGINT PK</td><td>Unique identifier for each shipment</td></tr>
+  <tr><td>order_id</td><td>int (fk)</td><td><code>order_id</code> BIGINT FK → <code>orders</code>, UNIQUE</td><td>The order being shipped (one shipment per order)</td></tr>
+  <tr><td>courier_service</td><td>varchar</td><td><code>courier_service</code> VARCHAR(100)</td><td>Courier, e.g. Blue Dart, Delhivery</td></tr>
+  <tr><td>tracking_number</td><td>varchar</td><td><code>tracking_number</code> VARCHAR(100), indexed</td><td>Number used to track the parcel</td></tr>
+  <tr><td>shipping_status</td><td>varchar</td><td><code>shipping_status</code> ENUM</td><td>Pending, Shipped, In transit, Out for delivery, Delivered, Cancelled, Returned</td></tr>
+  <tr><td>shipping_cost</td><td>decimal</td><td><code>shipping_cost</code> DECIMAL(12,2)</td><td>Amount charged for delivery</td></tr>
+  <tr><td>created_at</td><td>datetime</td><td><code>created_at</code> DATETIME(6)</td><td>When the shipment was created (order placed)</td></tr>
+  <tr><td>updated_at</td><td>datetime</td><td><code>updated_at</code> DATETIME(6)</td><td>Last change</td></tr>
+  <tr><td colspan="2"><span class="new">ADDED</span></td><td><code>shipping_method</code>, <code>delivery_zone</code>, <code>weight_kg</code>, <code>estimated_delivery</code>, <code>shipped_at</code>, <code>delivered_at</code></td><td>Inputs of the cost calculation and the delivery dates</td></tr>
+</table>
+<p>Also added: <code>products.weight_kg</code> DECIMAL(8,2) (packed weight, default 0.50 kg). On start-up, existing orders get a <code>shipping</code> row (courier, tracking and status from their items) and existing products get a weight by category.</p>
+
+<h2>Appendix B: SQL behind each action</h2>
+<pre><span class="c">-- Dashboard</span>
+SELECT o.order_number, o.city, s.delivery_zone, s.shipping_method, s.weight_kg, s.shipping_cost,
+       s.courier_service, s.tracking_number, s.shipping_status, s.estimated_delivery
+FROM shipping s JOIN orders o ON o.order_id = s.order_id
+WHERE o.status &lt;&gt; 'PENDING_PAYMENT' ORDER BY o.created_at DESC;
+<span class="c">-- Track by tracking number (own orders only)</span>
+SELECT s.courier_service, s.shipping_status, s.estimated_delivery, o.order_number
+FROM shipping s JOIN orders o ON o.order_id = s.order_id
+WHERE UPPER(s.tracking_number) = UPPER('BD848360170') AND o.customer_id = 8;
+<span class="c">-- Update shipping information (one transaction; also copied to the order's items)</span>
+UPDATE shipping SET courier_service = 'Blue Dart', tracking_number = 'BD848360170',
+       shipping_status = 'IN_TRANSIT', updated_at = NOW(6) WHERE order_id = 22;
+UPDATE order_items SET courier_name = 'Blue Dart', tracking_number = 'BD848360170'
+WHERE order_id = 22 AND item_status = 'SHIPPED';</pre>
+<p>The full set, including the cost calculation in SQL and late shipments, is in <code>DataBase/queries.sql</code> section 13 (tested with <code>ROLLBACK</code>).</p>
+
+<h2>Appendix C: API endpoints (JWT required)</h2>
+<table>
+  <tr><th style="width:10%">Method</th><th style="width:40%">Path</th><th>Purpose</th></tr>
+  <tr><td>POST</td><td><code>/customer/shipping/quote</code></td><td>Standard and Express price for the cart and an address (customer)</td></tr>
+  <tr><td>POST</td><td><code>/customer/checkout</code></td><td>Places the order with <code>shippingMethod</code> and creates its shipment</td></tr>
+  <tr><td>GET</td><td><code>/customer/track/{trackingNumber}</code></td><td>Track a shipment (customer, own orders)</td></tr>
+  <tr><td>GET</td><td><code>/admin/shipping?status=&amp;search=&amp;page=</code></td><td>Shipping dashboard list</td></tr>
+  <tr><td>GET</td><td><code>/admin/shipping/summary</code></td><td>Dashboard cards</td></tr>
+  <tr><td>GET</td><td><code>/admin/shipping/{orderId}</code></td><td>One shipment</td></tr>
+  <tr><td>PUT</td><td><code>/admin/shipping/{orderId}</code></td><td>Update courier, tracking number and status</td></tr>
+</table>
+</body>
+</html>

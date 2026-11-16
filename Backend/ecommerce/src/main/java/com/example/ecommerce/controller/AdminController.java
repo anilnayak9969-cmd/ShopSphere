@@ -233,11 +233,30 @@ public class AdminController {
 
     // --------------------------------------------------------------- reviews
 
+    /** Review moderation queue (pending first). status = PENDING | APPROVED | REJECTED. */
     @GetMapping("/reviews")
-    public PageResponse<ReviewResponse> reviews(@RequestParam(required = false) Integer rating,
+    public PageResponse<ReviewResponse> reviews(@RequestParam(required = false) com.example.ecommerce.enums.ReviewStatus status,
+                                                @RequestParam(required = false) Integer rating,
+                                                @RequestParam(required = false) String search,
                                                 @RequestParam(defaultValue = "0") int page,
                                                 @RequestParam(defaultValue = "10") int size) {
-        return reviewService.adminReviews(rating, page, size);
+        return reviewService.adminReviews(status, rating, search, page, size);
+    }
+
+    @GetMapping("/reviews/summary")
+    public com.example.ecommerce.dtos.review.ReviewModerationDtos.ModerationSummary reviewSummary() {
+        return reviewService.moderationSummary();
+    }
+
+    @PatchMapping("/reviews/{id}/approve")
+    public ReviewResponse approveReview(@PathVariable Long id) {
+        return reviewService.approve(id);
+    }
+
+    @PatchMapping("/reviews/{id}/reject")
+    public ReviewResponse rejectReview(@PathVariable Long id,
+                                       @Valid @RequestBody com.example.ecommerce.dtos.review.ReviewModerationDtos.RejectRequest request) {
+        return reviewService.reject(id, request.reason());
     }
 
     /** Moderation: remove a review that breaks the content policy. */

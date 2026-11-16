@@ -1,7 +1,13 @@
 package com.example.ecommerce.entites;
 
+import java.time.LocalDateTime;
+
+import com.example.ecommerce.enums.ReviewStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -44,6 +50,31 @@ public class Review extends AuditableEntity {
     @Column(length = 120)
     private String title;
 
+    /** The review text (assignment column review_text). */
     @Column(length = 2000)
     private String comment;
+
+    /** Moderation state. Only APPROVED reviews appear on the product page and count towards its rating. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "moderation_status", length = 20)
+    private ReviewStatus moderationStatus = ReviewStatus.PENDING;
+
+    /** Assignment column: true for approved reviews, false for unapproved (pending or rejected). */
+    @Column(name = "status")
+    private Boolean approved = Boolean.FALSE;
+
+    /** Why an admin rejected the review; shown to the customer. */
+    @Column(name = "rejection_reason", length = 255)
+    private String rejectionReason;
+
+    @Column(name = "moderated_at")
+    private LocalDateTime moderatedAt;
+
+    /** Sets the moderation state and keeps the Boolean status column in step with it. */
+    public void moderate(ReviewStatus status, String reason) {
+        this.moderationStatus = status;
+        this.approved = status == ReviewStatus.APPROVED;
+        this.rejectionReason = status == ReviewStatus.REJECTED ? reason : null;
+        this.moderatedAt = status == ReviewStatus.PENDING ? null : LocalDateTime.now();
+    }
 }

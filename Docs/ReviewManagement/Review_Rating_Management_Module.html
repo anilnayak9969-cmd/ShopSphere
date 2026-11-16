@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ShopSphere — Review and Rating Management Module</title>
+<style>
+  @page { size: A4; margin: 18mm 17mm 20mm 17mm; }
+  :root { --navy: #14213d; --blue: #2563eb; --ink: #1f2937; --muted: #6b7280; --line: #cfd6e0; --head: #eef1f5; --warn: #fff7e6; --warn-line: #f59e0b; --ok: #e8f6ee; --ok-ink: #137a3e; }
+  * { box-sizing: border-box; }
+  body { font-family: Calibri, "Segoe UI", Arial, sans-serif; color: var(--ink); font-size: 10.6pt; line-height: 1.42; margin: 0; }
+  h1 { font-size: 23pt; color: var(--navy); margin: 0 0 2pt; letter-spacing: -0.2pt; }
+  .subtitle { font-size: 14pt; color: var(--muted); margin: 0 0 4pt; }
+  .byline { color: var(--muted); margin-bottom: 14pt; }
+  h2 { font-size: 15.5pt; color: var(--navy); margin: 18pt 0 6pt; page-break-after: avoid; }
+  h3 { font-size: 12.3pt; color: var(--blue); margin: 14pt 0 5pt; page-break-after: avoid; }
+  p { margin: 0 0 7pt; }
+  ul, ol { margin: 0 0 8pt; padding-left: 20pt; }
+  li { margin-bottom: 2.5pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 10pt; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  th, td { border: 1px solid var(--line); padding: 5pt 7pt; text-align: left; vertical-align: top; }
+  th { background: var(--head); font-weight: 700; }
+  code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 9.2pt; }
+  pre { background: #f2f4f7; padding: 7pt 9pt; font-family: Consolas, monospace; font-size: 8.5pt; line-height: 1.35; white-space: pre-wrap; margin: 4pt 0 10pt; }
+  pre .c { color: #6b7280; }
+  .note { background: var(--warn); border-left: 4pt solid var(--warn-line); padding: 6pt 9pt; margin: 6pt 0 10pt; }
+  .done { background: var(--ok); color: var(--ok-ink); font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; white-space: nowrap; font-size: 9.5pt; }
+  .new { background: #e8f0fe; color: #1d4ed8; font-weight: 700; padding: 1pt 6pt; border-radius: 8pt; white-space: nowrap; font-size: 8.5pt; }
+  figure { margin: 8pt 0 12pt; text-align: center; page-break-inside: avoid; }
+  figure img { width: 100%; border: 1px solid var(--line); }
+  figcaption { font-style: italic; color: #4b5563; font-size: 9.6pt; margin-top: 4pt; }
+  .page-break { page-break-before: always; }
+  .small { font-size: 9.5pt; color: var(--muted); }
+  a { color: var(--blue); }
+</style>
+</head>
+<body>
+<h1>ShopSphere — Review and Rating Management Module</h1>
+<div class="subtitle">Assignment submission and end user documentation</div>
+<div class="byline">Anil Nayak · 16 November 2026</div>
+
+<h2>Submission details</h2>
+<table>
+  <tr><th style="width:32%">Item</th><th>Details</th></tr>
+  <tr><td>Candidate</td><td>Anil Nayak</td></tr>
+  <tr><td>Internship</td><td>ITVedant / Vibgyor Advisors integrated internship</td></tr>
+  <tr><td>Project / Module</td><td>ShopSphere — Review and Rating Management (product page, customer account, admin console)</td></tr>
+  <tr><td>Stack</td><td>React 19 + Vite · Java 17, Spring Boot 4, JWT · MySQL (<code>ecommerce_intern</code>, table <code>reviews</code>)</td></tr>
+</table>
+
+<h2>1. GitHub repository link</h2>
+<p><b>Repository:</b> <a href="https://github.com/anilnayak9969-cmd/ShopSphere">https://github.com/anilnayak9969-cmd/ShopSphere</a></p>
+<p>Module code: <code>ReviewServiceImpl</code>, <code>ReviewRepository</code>, <code>Review</code> (table <code>reviews</code>), enum <code>ReviewStatus</code>, <code>ReviewResponse</code>, <code>ReviewModerationDtos</code>, review endpoints in <code>ProductController</code>, <code>CustomerAccountController</code>, <code>CustomerController</code> and <code>AdminController</code>; frontend <code>components/ProductReviews.jsx</code>, <code>pages/customer/MyReviews.jsx</code>, <code>pages/admin/AdminReviews.jsx</code>; SQL in <code>DataBase/queries.sql</code> section 14; this document in <code>Docs/ReviewManagement</code>.</p>
+
+<h2>2. URL of the module hosted on a free server</h2>
+<p><b>Website:</b> <a href="https://host-shop-sphere.vercel.app/">https://host-shop-sphere.vercel.app/</a> — reviews are at the bottom of every product page; customers: <b>Account → My reviews</b>; admin: <b>Admin console → Reviews</b>.</p>
+<div class="note"><b>Hosting status:</b> only the React frontend is deployed on Vercel; the backend and database are not online yet. The changes appear there after the latest code is pushed and redeployed. Screenshots were taken from the application running locally.</div>
+
+<h2>3. Requirement checklist — is the module implemented?</h2>
+<p>Reviews already existed in ShopSphere: verified buyers could rate (1–5 stars) and review a product, reviews showed on the product page with an average and star breakdown, customers could edit or delete their own review, and admins could delete reviews. Reviews were published immediately — there was <b>no moderation</b> and no <code>status</code> column. Everything marked <span class="new">ADDED</span> was built for this assignment.</p>
+<table>
+  <tr><th style="width:24%">Requirement</th><th>How ShopSphere implements it</th><th style="width:14%">Status</th></tr>
+  <tr><td><b>1. Add a review / rating</b> for purchased products</td><td><b>Write a review</b> on the product page: 1–5 stars (required), an optional headline and review text. Only customers whose item was <b>delivered</b> can review, once per product. A new review is sent for approval <span class="new">ADDED</span>.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>2. Review moderation</b> (admin)</td><td><b>Admin console → Reviews</b> <span class="new">ADDED</span>: cards (awaiting approval, approved, rejected, average rating), pending reviews first, filters by status and stars, search, and <b>Approve</b> / <b>Reject</b> (with a reason the customer sees) / <b>Delete</b>. Customers are notified of the decision; admins are notified of new reviews.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>3. View product reviews</b></td><td>Every product page shows the average rating, the 5★–1★ breakdown and the reviews with the reviewer's first name and a <i>Verified purchase</i> badge. Now only <b>approved</b> reviews are shown and counted <span class="new">ADDED</span>.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>4. Delete / update reviews</b></td><td>Customers edit or delete their own review on the product page or in <b>My reviews</b> (status and rejection reason shown <span class="new">ADDED</span>); an edited review is checked again <span class="new">ADDED</span>. Admins delete inappropriate reviews; the product rating is recalculated each time.</td><td><span class="done">Implemented</span></td></tr>
+  <tr><td><b>Database design</b>: table <code>reviews</code></td><td>Table <code>reviews</code> with every assignment column; Boolean <code>status</code> (approved) plus <code>moderation_status</code>, <code>rejection_reason</code>, <code>moderated_at</code> <span class="new">ADDED</span>. See Appendix A.</td><td><span class="done">Implemented</span></td></tr>
+</table>
+
+<h2>4. End user documentation — Review and Rating Management</h2>
+
+<h3>4.1 Add a review and rating (customer)</h3>
+<ol>
+  <li>Sign in as a customer and open a product that has been <b>delivered</b> to you (for example from <b>My orders</b>).</li>
+  <li>Scroll to <b>What buyers say</b> and click <b>Write a review</b>.</li>
+  <li>Choose 1 to 5 stars (Poor, Fair, Good, Very good, Excellent), optionally add a headline and your review (up to 2000 characters), and click <b>Submit review</b>.</li>
+  <li>The review is sent for approval. <i>Your review — Awaiting approval</i> is shown to you until a moderator approves it.</li>
+</ol>
+<figure><img src="screenshots/r01-write-review.png"><figcaption>Figure 1 — Writing a 5-star review of the kettlebell Priya received.</figcaption></figure>
+<figure><img src="screenshots/r02-review-awaiting-approval.png"><figcaption>Figure 2 — After submitting: the review is awaiting approval and not yet public.</figcaption></figure>
+
+<h3>4.2 Moderate reviews (admin)</h3>
+<ol>
+  <li>Open <b>Admin console → Reviews</b>. Reviews awaiting approval are listed first, with the product, stars, headline, text and the customer's name and email.</li>
+  <li><b>Approve</b> publishes the review: it appears on the product page and counts towards the product's rating. The customer is notified.</li>
+  <li><b>Reject</b> asks for a reason (pick a common one or type your own). The review is hidden, does not count, and the customer sees the reason and can edit and resubmit it.</li>
+  <li>Use the status filter (Awaiting approval / Approved / Rejected / All), the star filter and search to find reviews.</li>
+</ol>
+<figure><img src="screenshots/r03-admin-moderation-queue.png"><figcaption>Figure 3 — The moderation queue with three reviews awaiting approval.</figcaption></figure>
+<figure><img src="screenshots/r04-admin-reject-reason.png"><figcaption>Figure 4 — Rejecting a review that contains a phone number, with the reason shown to the customer.</figcaption></figure>
+<figure><img src="screenshots/r05-admin-approved.png"><figcaption>Figure 5 — After rejecting one review and approving the kettlebell review; the cards update.</figcaption></figure>
+<figure><img src="screenshots/r06-admin-all-reviews.png"><figcaption>Figure 6 — All reviews with their status, rejection reason and moderation date.</figcaption></figure>
+
+<h3>4.3 View product reviews (everyone)</h3>
+<p>At the bottom of every product page, <b>What buyers say</b> shows the average rating out of 5, the number of reviews, a bar for each star value, and the approved reviews (newest first) with the reviewer's first name, a <i>Verified purchase</i> badge and the date. Visitors do not need to sign in. The same average appears on product cards and can be used to sort and filter the catalogue.</p>
+<figure><img src="screenshots/r07-product-page-reviews.png"><figcaption>Figure 7 — The approved review on the product page, seen by a visitor: 5.0 out of 5 from 1 verified review.</figcaption></figure>
+
+<h3>4.4 Update or delete reviews</h3>
+<ul>
+  <li><b>Customer:</b> <b>Account → My reviews</b> lists every review with its status — <i>Published</i>, <i>Awaiting approval</i> or <i>Not published</i> with the reason. <b>Edit review</b> opens the form on the product page (an edited review is checked again before it reappears); <b>Delete</b> removes it after a confirmation.</li>
+  <li><b>Admin:</b> the bin button deletes an inappropriate review permanently after a confirmation; the product rating is recalculated and the customer is notified.</li>
+</ul>
+<figure><img src="screenshots/r08-my-reviews-status.png"><figcaption>Figure 8 — My reviews: published, not published (with the reason) and awaiting approval.</figcaption></figure>
+<figure><img src="screenshots/r09-edit-own-review.png"><figcaption>Figure 9 — Editing your own review, with Delete review.</figcaption></figure>
+<figure><img src="screenshots/r10-admin-delete-review.png"><figcaption>Figure 10 — An admin deleting an inappropriate review.</figcaption></figure>
+
+<h3>4.5 Rules and messages</h3>
+<table>
+  <tr><th style="width:42%">Situation</th><th>Result</th></tr>
+  <tr><td>Reviewing a product not delivered to you</td><td><i>You can review this product once it has been delivered to you.</i> (HTTP 403)</td></tr>
+  <tr><td>No star rating / rating outside 1–5</td><td><i>Choose a rating</i> / <i>Rating must be 1-5</i></td></tr>
+  <tr><td>Reviewing the same product again</td><td>Your existing review is updated (one per customer per product)</td></tr>
+  <tr><td>Editing an approved review</td><td>It goes back to <i>Awaiting approval</i> and is hidden until approved again</td></tr>
+  <tr><td>Rejecting without a reason</td><td><i>Give a reason for rejecting the review</i></td></tr>
+  <tr><td>Rating average and count</td><td>Approved reviews only; recalculated on every approve, reject, edit and delete</td></tr>
+  <tr><td>Moderation used by a customer or seller</td><td>HTTP 403 — admin only. Sellers cannot write reviews.</td></tr>
+  <tr><td>Privacy</td><td>Only the reviewer's first name is public; the admin queue shows the name and email</td></tr>
+</table>
+
+<h2>5. Screenshots of the running application</h2>
+<p>Figures 1–10 were taken from the application running locally (React on <code>localhost:5173</code>, Spring Boot on <code>localhost:8080</code>, MySQL <code>ecommerce_intern</code>) with the demo customer Priya Sharma and the ShopSphere admin.</p>
+
+<h2>6. Testing</h2>
+<ul>
+  <li><b>Unit tests:</b> <code>ReviewManagementTest</code> (13) — new review awaits approval and admins are told, 1–5 star validation, approve publishes and recalculates the rating, reject with a reason, reason required, approving twice, moderation summary, queue filters, product page shows approved only, editing sends a review back for approval, unchanged review keeps its approval, customer delete, admin delete with notification. <code>ReviewServiceImplTest</code> (2) — buyers only. Full backend suite: <b>138 tests, all passing</b>.</li>
+  <li><b>End-to-end checks</b> against the running app (28, all passing): not-bought product refused, 0 and 6 stars refused, pending review hidden, moderation queue and summary, approve, product page and average, edit → re-approval, reject with reason, customer sees reason, notifications, customer and admin delete, and customer / seller refused (403).</li>
+</ul>
+
+<h2 class="page-break">Appendix A: database table</h2>
+<table>
+  <tr><th style="width:18%">Assignment column</th><th style="width:19%">Assignment type</th><th style="width:30%">ShopSphere column (<code>reviews</code>)</th><th>Meaning</th></tr>
+  <tr><td>review_id</td><td>int (pk, auto_increment)</td><td><code>review_id</code> BIGINT PK</td><td>Unique identifier for each review</td></tr>
+  <tr><td>product_id</td><td>int (fk)</td><td><code>product_id</code> BIGINT FK → <code>products</code></td><td>The reviewed product</td></tr>
+  <tr><td>customer_id</td><td>int (fk)</td><td><code>user_id</code> BIGINT FK → <code>users</code></td><td>The customer; <code>(product_id, user_id)</code> is unique</td></tr>
+  <tr><td>rating</td><td>int</td><td><code>rating</code> INT</td><td>1–5 stars</td></tr>
+  <tr><td>review_text</td><td>varchar(1000)</td><td><code>comment</code> VARCHAR(2000) + <code>title</code> VARCHAR(120)</td><td>The written review and an optional headline</td></tr>
+  <tr><td>created_at</td><td>datetime</td><td><code>created_at</code> DATETIME(6)</td><td>When the review was written</td></tr>
+  <tr><td>updated_at</td><td>datetime</td><td><code>updated_at</code> DATETIME(6)</td><td>Last change</td></tr>
+  <tr><td>status</td><td>boolean</td><td><code>status</code> BIT(1)</td><td>1 = approved, 0 = unapproved <span class="new">ADDED</span></td></tr>
+  <tr><td colspan="2"><span class="new">ADDED</span></td><td><code>moderation_status</code> ENUM, <code>rejection_reason</code>, <code>moderated_at</code></td><td>Pending / approved / rejected, why it was rejected, and when it was decided</td></tr>
+</table>
+<p><code>status</code> always mirrors <code>moderation_status</code> (true only for APPROVED); the extra column tells pending reviews apart from rejected ones. Reviews written before moderation existed were marked approved on start-up. The product's average and count are stored in <code>products.rating_average</code> / <code>rating_count</code>.</p>
+
+<h2>Appendix B: SQL behind each action</h2>
+<pre><span class="c">-- Product page: approved reviews and the average</span>
+SELECT r.rating, r.title, r.comment, r.created_at FROM reviews r
+WHERE r.product_id = 70 AND r.moderation_status = 'APPROVED' ORDER BY r.created_at DESC;
+SELECT ROUND(AVG(rating), 2), COUNT(*) FROM reviews WHERE product_id = 70 AND moderation_status = 'APPROVED';
+<span class="c">-- Add (waits for approval)</span>
+INSERT INTO reviews (product_id, user_id, rating, title, comment, moderation_status, status, created_at, updated_at)
+VALUES (70, 8, 5, 'Solid and well balanced', 'Smooth handle ...', 'PENDING', b'0', NOW(6), NOW(6));
+<span class="c">-- Approve / reject</span>
+UPDATE reviews SET moderation_status = 'APPROVED', status = b'1', moderated_at = NOW(6) WHERE review_id = 15;
+UPDATE reviews SET moderation_status = 'REJECTED', status = b'0',
+       rejection_reason = 'Contains personal or contact details', moderated_at = NOW(6) WHERE review_id = 14;
+<span class="c">-- Delete</span>
+DELETE FROM reviews WHERE review_id = 14;</pre>
+<p>The full set, including the moderation queue, the star breakdown and keeping <code>products.rating_average</code> in step, is in <code>DataBase/queries.sql</code> section 14 (tested with <code>ROLLBACK</code>).</p>
+
+<h2>Appendix C: API endpoints</h2>
+<table>
+  <tr><th style="width:10%">Method</th><th style="width:42%">Path</th><th>Purpose</th></tr>
+  <tr><td>GET</td><td><code>/products/{id}/reviews</code>, <code>/products/{id}/reviews/summary</code></td><td>Approved reviews and the rating summary (public)</td></tr>
+  <tr><td>GET</td><td><code>/customer/products/{id}/review</code></td><td>Can I review it? + my review and its status</td></tr>
+  <tr><td>PUT</td><td><code>/customer/products/{id}/review</code></td><td>Add or update my review (<code>{ rating, title, comment }</code>)</td></tr>
+  <tr><td>DELETE</td><td><code>/customer/products/{id}/review</code></td><td>Delete my review</td></tr>
+  <tr><td>GET</td><td><code>/customer/reviews</code></td><td>My reviews with status</td></tr>
+  <tr><td>GET</td><td><code>/admin/reviews?status=&amp;rating=&amp;search=</code>, <code>/admin/reviews/summary</code></td><td>Moderation queue and cards (admin)</td></tr>
+  <tr><td>PATCH</td><td><code>/admin/reviews/{id}/approve</code>, <code>/admin/reviews/{id}/reject</code></td><td>Approve; reject with <code>{ reason }</code></td></tr>
+  <tr><td>DELETE</td><td><code>/admin/reviews/{id}</code></td><td>Delete an inappropriate review</td></tr>
+</table>
+</body>
+</html>

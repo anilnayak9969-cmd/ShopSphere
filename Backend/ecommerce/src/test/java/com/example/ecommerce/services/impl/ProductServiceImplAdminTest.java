@@ -142,7 +142,7 @@ class ProductServiceImplAdminTest {
 
     private static ProductRequest request(String sku, int categoryId, int stock) {
         return new ProductRequest("Brass Desk Lamp", "Warm brass desk lamp with a fabric shade.", sku, "Lumen",
-                new BigDecimal("1999"), 10, stock, null, categoryId, List.of(), List.of());
+                new BigDecimal("1999"), 10, stock, null, categoryId, List.of(), List.of(), new BigDecimal("1.20"));
     }
 
     private static User seller(Long id, SellerStatus status) {

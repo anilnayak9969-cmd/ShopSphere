@@ -54,7 +54,7 @@ export default function Footer() {
               </li>
               {user?.role === 'CUSTOMER' && (
                 <li>
-                  <Link to="/account/orders">Track my order</Link>
+                  <Link to="/track">Track my order</Link>
                 </li>
               )}
             </ul>

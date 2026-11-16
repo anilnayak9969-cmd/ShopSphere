@@ -24,6 +24,12 @@ const adminService = {
   updateCustomer: (id, payload) => api.put(`/admin/customers/${id}`, payload).then((r) => r.data),
   setCustomerActive: (id, active) => api.patch(`/admin/customers/${id}/status`, { active }).then((r) => r.data),
 
+  // Shipping Management
+  getShipments: (params) => api.get('/admin/shipping', { params: cleanParams(params) }).then((r) => r.data),
+  getShippingSummary: () => api.get('/admin/shipping/summary').then((r) => r.data),
+  /** { courierService, trackingNumber, status, note } */
+  updateShipping: (orderId, payload) => api.put(`/admin/shipping/${orderId}`, payload).then((r) => r.data),
+
   // Cart Management (customer carts and abandonment)
   getCarts: (params) => api.get('/admin/carts', { params: cleanParams(params) }).then((r) => r.data),
   getCartSummary: (abandonedAfterHours) => api.get('/admin/carts/summary', { params: { abandonedAfterHours } }).then((r) => r.data),
@@ -78,6 +84,9 @@ const adminService = {
 
   // Reviews
   getReviews: (params) => api.get('/admin/reviews', { params: cleanParams(params) }).then((r) => r.data),
+  getReviewSummary: () => api.get('/admin/reviews/summary').then((r) => r.data),
+  approveReview: (id) => api.patch(`/admin/reviews/${id}/approve`).then((r) => r.data),
+  rejectReview: (id, reason) => api.patch(`/admin/reviews/${id}/reject`, { reason }).then((r) => r.data),
   deleteReview: (id) => api.delete(`/admin/reviews/${id}`).then((r) => r.data),
 
   // Reports, settings, messages
